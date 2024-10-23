@@ -1,24 +1,4 @@
-import numpy as np
-
-def golden_search(f, a, b, tol=1e-10):
-    # ChatGPT's golden-search algorithm
-    golden_ratio = (np.sqrt(5) - 1) / 2
-    c = b - golden_ratio * (b - a)
-    d = a + golden_ratio * (b - a)
-    
-    while abs(b - a) > tol:
-        if abs(f(c)) < abs(f(d)):
-            b = d
-        else:
-            a = c
-        c = b - golden_ratio * (b - a)
-        d = a + golden_ratio * (b - a)
-
-    root = (a + b) / 2
-    return root
-
-class InputError(Exception):
-    pass
+from algorithm import *
 
 class Nozzle:
 
@@ -44,6 +24,18 @@ class Nozzle:
         self.T_star = None
         self.rho_star = None
         self.chokedflowrate = None
+
+        self.P_exit = None
+        self.T_exit = None
+        self.rho_exit = None
+        self.M_exit = None
+        self.speed_of_sound_exit = None
+
+        self.thrust = None
+        self.c_star = None
+        self.c_F = None
+        self.Isp = None
+
 
     def set_gamma(self, gamma):
         self.gamma = gamma
@@ -113,8 +105,37 @@ class Nozzle:
     def get_area_ratio(self):
         return self.A_e_over_A_star
     
-    def Mach_number_func_minus_Area_ratio(self, M):
-        return (((self.gamma-1)/2)**(-(self.gamma+1)/(2*(self.gamma-1)))) * ((1 + ((self.gamma-1)/2) * M**2)**((self.gamma+1)/(2*(self.gamma-1)))) / M - self.A_e_over_A_star
+    def __Mach_number_func_minus_Area_ratio(self, M):
+        return (((self.gamma+1)/2)**(-(self.gamma+1)/(2*(self.gamma-1)))) * ((1 + ((self.gamma-1)/2) * M**2)**((self.gamma+1)/(2*(self.gamma-1)))) / M - self.A_e_over_A_star
 
     def get_exit_mach_number(self):
-        return golden_search(self.Mach_number_func_minus_Area_ratio, 1, 5)
+        self.M_exit = golden_search(self.__Mach_number_func_minus_Area_ratio, 1, 5)
+        return self.M_exit
+    
+    def get_exit_conditions(self):
+        if(self.P_star == None or self.T_star == None or self.rho_star == None): raise InputError("Please set the stagnation conditions before calculating exit conditions!")
+        if(self.M_exit == None):
+            self.get_exit_mach_number()
+        
+        self.P_exit = self.P_star * (1 + ((self.gamma-1)/2)*self.M_exit**2)**(-(self.gamma)/(self.gamma-1))
+        self.T_exit = self.T_star * (1 + ((self.gamma-1)/2)*self.M_exit**2)**(-1)
+        self.rho_exit = self.rho_star * (1 + ((self.gamma-1)/2)*self.M_exit**2)**(-1/(self.gamma-1))
+        self.speed_of_sound_exit = np.sqrt(self.gamma * self.R * self.T_exit)
+        return self.P_exit, self.T_exit, self.rho_exit, self.speed_of_sound_exit
+
+    def get_thrust_Isp(self):
+        if(self.P_star == None or self.T_star == None or self.rho_star == None): raise InputError("Please set the stagnation conditions before calculating exit conditions!")
+        if(self.M_exit == None):
+            self.get_exit_mach_number()
+        if(self.speed_of_sound_exit == None or self.P_exit == None):
+            self.get_exit_conditions()
+        self.thrust = self.flowrate * self.M_exit * self.speed_of_sound_exit + (self.P_exit - self.P_b)*self.A_exit
+        self.c_F = self.thrust / (self.P_0 * self.A_thoat)
+        self.c_star = np.sqrt(((self.R * self.T_0)/self.gamma)*((self.gamma+1)/2)**((self.gamma+1)/(self.gamma-1)))
+        self.Isp = (self.c_F * self.c_star)/9.81
+        return self.thrust, self.Isp
+    
+    def get_thrust_coeff_characteristic_velocity(self):
+        if(self.c_F == None or self.c_star == None):
+            self.get_Thrust_Isp()
+        return self.c_F, self.c_star

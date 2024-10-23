@@ -1,7 +1,4 @@
-from CoolProp.CoolProp import PropsSI
-
-class InputError(Exception):
-    pass
+from algorithm import *
 
 class Chemical:
     

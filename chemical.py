@@ -9,7 +9,6 @@ class Chemical: # class for holding the properties of a chemical
         self.cv = None
         self.R = None
         self.gamma = None
-
         self.T = None
         self.rho = None
         self.P = None

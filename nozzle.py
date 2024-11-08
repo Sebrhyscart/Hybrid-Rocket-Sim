@@ -3,49 +3,45 @@ from algorithm import *
 class Nozzle: # converging-diverging (DeLaval) nozzle class
 
     def __init__(self, A_throat: float, A_exit: float):
-        # GEOMETRY
         self.A_thoat = A_throat # [m]
         self.A_exit = A_exit # [m]
         self.A_e_over_A_star = A_exit / A_throat
-
-        # GAS CONSTANTS
         self.gamma = None # specific heat capacity ratio
         self.R = None # [J/kg/K] gas constant
-
-        # NOZZLE CONDITIONS
         self.choked = None
         self.P_b = None # [Pa] back pressure
         self.P_0 = None
         self.T_0 = None
         self.rho_0 = None
         self.flowrate = None
-
         self.P_star = None
         self.T_star = None
         self.rho_star = None
         self.chokedflowrate = None
-
         self.P_exit = None
         self.T_exit = None
         self.rho_exit = None
         self.M_exit = None
         self.speed_of_sound_exit = None
-
         self.thrust = None
         self.c_star = None
         self.c_F = None
         self.Isp = None
 
-    def set_gamma(self, gamma):
+    def set_gamma(self, gamma:float):
         self.gamma = gamma
 
-    def set_R(self, R):
+    def set_R(self, R:float):
         self.R = R
 
-    def set_backpressure(self, P_b):
+    def set_gamma_R(self, gamma:float, R:float):
+        self.gamma = gamma
+        self.R = R
+
+    def set_backpressure(self, P_b:float):
         self.P_b = P_b
 
-    def set_stagnation(self, P_0, T_0):
+    def set_stagnation(self, P_0:float, T_0:float):
         if (self.gamma != None and self.R != None):
             self.P_0 = P_0
             self.T_0 = T_0
@@ -71,7 +67,7 @@ class Nozzle: # converging-diverging (DeLaval) nozzle class
         else:
             raise InputError("Please Define Nozzle stagnation conditions and/or back pressure before setting the flowrate using stagnation conditions!\nUse the method my_nozzle.set_stagnation(P_0, T_0) and/or my_nozzle.set_backpressure(P_b)")
 
-    def set(self, gamma, R, P_b, P_0, T_0):
+    def set(self, gamma:float, R:float, P_b:float, P_0:float, T_0:float):
         self.gamma = gamma
         self.R = R
         self.P_b = P_b
@@ -104,7 +100,7 @@ class Nozzle: # converging-diverging (DeLaval) nozzle class
     def get_area_ratio(self):
         return self.A_e_over_A_star
     
-    def __Mach_number_func_minus_Area_ratio(self, M):
+    def __Mach_number_func_minus_Area_ratio(self, M:float):
         return (((self.gamma+1)/2)**(-(self.gamma+1)/(2*(self.gamma-1)))) * ((1 + ((self.gamma-1)/2) * M**2)**((self.gamma+1)/(2*(self.gamma-1)))) / M - self.A_e_over_A_star
 
     def get_exit_mach_number(self):

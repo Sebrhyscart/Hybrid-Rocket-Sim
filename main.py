@@ -6,6 +6,7 @@ from nozzle import *
 from printout import *
 
 ## Base SI units are used for all quantities throughout
+## Time - [s]
 ## Mass - [kg]
 ## Length - [m]
 ## Temperature - [k]

@@ -98,7 +98,7 @@ def main():
         # N2O enters and decomposes
         aChemicalSet.set_chemical_massflow(N2O,aInjector.get_flowrate())                                    # set flowrate entering the combustion chamber this timestep
         m_dot_N2O, (m_dot_N2, m_dot_O2), Q_dot_decomp = decomposition.complete_reaction([m_dot_N2O])        # N2O -> N2 + 1/2 O2
-        aChemicalSet.set_multiple_chemical_massflow([N2O, N2, 2],[m_dot_N2O, m_dot_N2, m_dot_O2])              # add flowrates to chemical set
+        aChemicalSet.set_multiple_chemical_massflow([N2O, N2, O2],[m_dot_N2O, m_dot_N2, m_dot_O2])          # add flowrates to chemical set
 
         # regression rate and fuel evaporates
         r_dot = aCombustionChamber.regression_rate(aInjector.get_flowrate() / (np.pi * r_port**2))          # regression rate
@@ -107,12 +107,11 @@ def main():
         _, _, Q_dot_vap = vaporation.complete_reaction([m_dot_paraffin])                                    # rate latient heat is consumed by vaporizing paraffin
 
         # combustion reaction
-        (m_dot_paraffin, m_dot_O2), (m_dot_H2O, m_dot_CO2), Q_dot_comb = combustion([m_dot_paraffin, m_dot_O2]) # C32H66 + 97/2 O2 -> 33 H2O + 32 CO2
+        (m_dot_paraffin, m_dot_O2), (m_dot_H2O, m_dot_CO2), Q_dot_comb = combustion.complete_reaction([m_dot_paraffin, m_dot_O2]) # C32H66 + 97/2 O2 -> 33 H2O + 32 CO2
         aChemicalSet.set_multiple_chemical_massflow([paraffin, O2, H2O, CO2],[m_dot_paraffin, m_dot_O2, m_dot_H2O, m_dot_CO2]) # add flowrate to chemical set
 
         for k in range(aChemicalSet.len()):
             pass # mass conservation eqn for each chemical in da set
-
 
     print_title()
 main()

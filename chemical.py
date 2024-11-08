@@ -55,9 +55,6 @@ class Chemical: # class for holding the properties of a chemical
         if (self.R == None): raise ImportError("Gas constant has not been defined yet!")
         return self.R  
 
-class ChemicalReactionError(Exception):
-    pass
-
 class ChemicalSet: # class for holding the amount (mass) and rate of change of amount (massflow) of many chemicals
 
     def __init__(self):

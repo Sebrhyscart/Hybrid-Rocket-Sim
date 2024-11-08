@@ -101,7 +101,7 @@ class Nozzle: # isentropic converging-diverging (DeLaval) nozzle class
         if(self.speed_of_sound_exit == None or self.P_exit == None):
             self.get_exit_conditions()
         self.thrust = self.flowrate * self.M_exit * self.speed_of_sound_exit + (self.P_exit - self.P_b)*self.A_exit
-        self.c_F = self.thrust / (self.P_0 * self.A_thoat)
+        self.c_F = self.thrust / (self.P_0 * self.A_throat)
         self.c_star = np.sqrt(((self.R * self.T_0)/self.gamma)*((self.gamma+1)/2)**((self.gamma+1)/(self.gamma-1)))
         self.Isp = (self.c_F * self.c_star)/9.81
         return self.thrust, self.Isp

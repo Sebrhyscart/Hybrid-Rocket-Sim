@@ -17,21 +17,20 @@ class Chemical:
         self.h = None
         self.rho_solid = None
 
-    def set_const(self, mol_weight:float, cp:float, cv:float):
-        global N_A, k_B
-        self.mol_weight = mol_weight
-        self.cp = cp
-        self.cv = cv
-        self.R = (N_A * k_B) / mol_weight
-        self.gamma = cp / cv
-
     def set_mol_weight(self, mol_weight:float):
         global N_A, k_B
         self.mol_weight = mol_weight
         self.R = (N_A * k_B) / mol_weight
 
-    def set_cp(self,cp:float):
+    def set_cp(self, cp:float):
         self.cp = cp
+        if (self.cv != None):
+            self.gamma = cp / self.cv
+    
+    def set_cv(self, cv:float):
+        self.cv = cv
+        if (self.cp != None):
+            self.gamma = self.cp / cv
 
     def set_solid_density(self,rho_solid:float):
         self.rho_solid = rho_solid
@@ -74,6 +73,9 @@ class ChemicalSet:
     
     def set_chemical_mass(self, aChemical:Chemical, new_mass:float): 
         # set the mass of a chemical
+        if (type(new_mass) != float and type(new_mass) != int):
+            print("type(new_mass) ", type(new_mass))  # I hate python :(
+            raise TypeError("new mass needs to be of type float") 
         self.m_species[aChemical.get_name()] = new_mass
 
     def set_multiple_chemical_mass(self, aChemicalList:list[Chemical], new_mass_list:list[float]): 
@@ -88,7 +90,11 @@ class ChemicalSet:
     def set_multiple_chemical_massflow(self, aChemicalList:list[Chemical], new_massflow_list:list[float]): 
         # set the mass flow rates of multiple chemicals at once
         for k in range(len(aChemicalList)):
-            self.m_species[aChemicalList[k].get_name()] = new_massflow_list[k]
+            self.m_dot_species[aChemicalList[k].get_name()] = new_massflow_list[k]
+
+    def print_chemical_mass(self):
+        for key, value in self.m_species.items():
+            print(f"Key: {key}, Value: {value}, Value Type: {type(value)}")
 
     def get_chemical_dict(self) -> dict: 
         # return the dictionary of chemicals 
@@ -96,11 +102,11 @@ class ChemicalSet:
 
     def get_chemical_name_by_index(self,k:int) -> str: 
         # return the name of the 'k_th' chemical
-        return list(self.species.keys)[k]
+        return list(self.species.keys())[k]
     
     def get_chemical_by_index(self,k:int) -> Chemical:
         # return the 'k_th' chemical
-        return list(self.species.values)[k]
+        return list(self.species.values())[k]
 
     def get_chemical_mass(self,aChemical:Chemical) -> float: 
         # return the mass of this chemical
@@ -108,7 +114,7 @@ class ChemicalSet:
     
     def get_chemical_mass_by_index(self,k:int) -> float: 
         # return the mass of the 'k_th' chemical
-        return list(self.m_species.values)[k]
+        return list(self.m_species.values())[k]
 
     def get_chemical_massflow(self,aChemical:Chemical) -> float: 
         # return the massflow of this chemical
@@ -116,7 +122,7 @@ class ChemicalSet:
 
     def get_chemical_massflow_by_index(self,k:int) -> float: 
         # return the mass flow rate of the 'k_th' chemical
-        return list(self.m_species.values)[k]
+        return list(self.m_species.values())[k]
 
     def len(self) -> int: 
         # return the number of chemicals in the chemical set
@@ -126,6 +132,7 @@ class ChemicalSet:
         # return the total mass of all the chemicals in the chemical set
         if (len(self.species) != len(self.m_species)):
             warnings.warn("Warning: some chemical species have undefined masses and have not contributed to the total mass.", UserWarning)
+            print("len(self.species)", len(self.species), "len(self.m_species)", len(self.m_species))
         m_total = 0
         for k in range(len(self.m_species)):
             m_total += self.get_chemical_mass_by_index(k)
@@ -135,6 +142,7 @@ class ChemicalSet:
         # return mass-averaged isobaric specific heat capacity
         if (len(self.species) != len(self.m_species)):
             warnings.warn("Warning: some chemical species have undefined masses and have not contributed to the total mass.", UserWarning)
+            print("len(self.species)", len(self.species), "len(self.m_species)", len(self.m_species))
         m_total = 0
         cp_total = 0
         for k in range(len(self.species)):
@@ -146,6 +154,7 @@ class ChemicalSet:
         # return mass-averaged gas constant
         if (len(self.species) != len(self.m_species)):
             warnings.warn("Warning: some chemical species have undefined masses and have not contributed to the total mass.", UserWarning)
+            print("len(self.species)", len(self.species), "len(self.m_species)", len(self.m_species))
         m_total = 0
         R_total = 0
         for k in range(len(self.species)):
@@ -157,6 +166,7 @@ class ChemicalSet:
         # return mass-averaged specific heat capacity ratio
         if (len(self.species) != len(self.m_species)):
             warnings.warn("Warning: some chemical species have undefined masses and have not contributed to the total mass.", UserWarning)
+            print("len(self.species)", len(self.species), "len(self.m_species)", len(self.m_species))
         m_total = 0
         gamma_total = 0
         for k in range(len(self.species)):
@@ -164,11 +174,16 @@ class ChemicalSet:
             gamma_total += self.get_chemical_mass_by_index(k) * self.get_chemical_by_index(k).get_R()
         return gamma_total / m_total
 
-    def set_atmospheric_conditions(self, volume:float):
+    def set_atmospheric_conditions(self, volume:float, temperature:float):
         # set the mass of N2 and O2 to be consistant for 101325 [Pa] and 300 [k] at a given volume
         if ("N2" in self.species and "O2" in self.species):
-            self.set_chemical_mass(self.species["N2"],(0.79 * 101325 * volume)/(self.species["N2"].get_R() * 300))
-            self.set_chemical_mass(self.species["O2"],(0.21 * 101325 * volume)/(self.species["O2"].get_R() * 300))
+            for k in range(len(self.species)):
+                if (self.get_chemical_name_by_index(k) == "N2"):
+                    self.set_chemical_mass(self.get_chemical_by_index(k), (0.79 * 101325 * volume) / (self.get_chemical_by_index(k).get_R() * temperature))
+                elif (self.get_chemical_name_by_index(k) == "O2"):
+                    self.set_chemical_mass(self.get_chemical_by_index(k), (0.21 * 101325 * volume) / (self.get_chemical_by_index(k).get_R() * temperature))
+                else:
+                    self.set_chemical_mass(self.get_chemical_by_index(k), 0.0)
         else:
             raise KeyError("No instances of \"N2\" or \"O2\" exist in your ChemicalSet")
 

@@ -8,6 +8,9 @@ k_B = 1.380649e-23
 class InputError(Exception):
     pass
 
+class FuckYouError(Exception):
+    pass
+
 def golden_search(f, a, b, tol=1e-6):
     # ChatGPT's golden-search algorithm
     golden_ratio = (np.sqrt(5) - 1) / 2

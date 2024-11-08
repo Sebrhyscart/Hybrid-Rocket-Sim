@@ -13,7 +13,7 @@ class ChemicalReaction:
         self.product_stoich_coeff = stoich_coeff[len(reactants):]
         self.Q_reaction= Q_reaction
 
-    def complete_reaction(self, reactant_flowrates:list[float]):
+    def complete_reaction(self, reactant_flowrates:list[float]) -> tuple[list[float], list[float], float]:
         if (len(self.reactants) != len(reactant_flowrates)): raise ChemicalReactionError("Must specify a reactant flow rate for each reactant!")
         
         reactant_molflowrates = [0] * len(self.reactants)

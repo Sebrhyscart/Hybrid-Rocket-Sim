@@ -12,9 +12,12 @@ class CombustionChamber:
         self.a_regress = 1 # regression rate coefficient
         self.n_regress = 1 # regression rate coefficient
 
-    def get_r_port(self):
+    def set_r_port(self, r_port:float):
+        self.r_port = r_port
+
+    def get_r_port(self) -> float:
         return self.r_port
     
-    def regression_rate(self, G_ox: float):
+    def regression_rate(self, G_ox: float) -> float:
         return self.a_regress * (G_ox ** self.n_regress)
     

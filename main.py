@@ -10,6 +10,7 @@ from printout import *
 ## Mass - [kg]
 ## Length - [m]
 ## Temperature - [k]
+## Force - [N]
 ## Pressure - [Pa]
 ## Density - [kg/m3]
 ## Molecular weight - [g/mol]
@@ -64,6 +65,7 @@ def main():
     aCombustionChamber = CombustionChamber(combustion_chamber_outer_wall_radius, combustion_chamber_port_radius, combustion_chamber_fuel_length,
                                            combustion_chamber_pre_fuel_length, combustion_chamber_post_fuel_length)
     aNozzle = Nozzle((np.pi*nozzle_throat_radius**2), (nozzle_exit_radius**2 / nozzle_throat_radius**2))
+    aNozzle.set_back_pressure(101325)
 
     # ============================================================================================================
     # TIME INTEGRATOR
@@ -93,6 +95,11 @@ def main():
     l_fuel = combustion_chamber_fuel_length
 
     m_dot_out = 0
+    vol = (np.pi * r_port**2 * l_fuel) + (np.pi * r_wall**2 * (combustion_chamber_pre_fuel_length + combustion_chamber_post_fuel_length))
+    aChemicalSet.set_atmospheric_conditions(vol)
+
+
+
 
     while((r_port < r_wall) and (m_oxidizer >= 0)):                                                         # While we're not out of fuel or oxidizer ...
 
@@ -111,8 +118,30 @@ def main():
         (m_dot_paraffin, m_dot_O2), (m_dot_H2O, m_dot_CO2), Q_dot_comb = combustion.complete_reaction([m_dot_paraffin, m_dot_O2]) # C32H66 + 97/2 O2 -> 33 H2O + 32 CO2
         aChemicalSet.set_multiple_chemical_massflow([paraffin, O2, H2O, CO2],[m_dot_paraffin, m_dot_O2, m_dot_H2O, m_dot_CO2]) # add flowrate to chemical set
 
-        for k in range(aChemicalSet.len()):
-            pass # mass conservation eqn for each chemical in da set
+        # average properties and mass of chemicals
+        m_total = aChemicalSet.get_total_mass()
+        cp_ave = aChemicalSet.get_ave_cp()
+        R_ave = aChemicalSet.get_ave_R()
+        gamma_ave = aChemicalSet.get_ave_gamma()
 
+
+
+
+
+        # Change in volume
+        vol = vol - 2 * np.pi * r_port * l_fuel * r_dot * dt
+
+        # Conservation of Energy
+        Q_dot_out = m_dot_out * (cp_ave) * temp ### use of previous timestep value instead of current value - fix this later (sub into temp equation and rearrange)
+        temp = temp + (Q_dot_decomp + Q_dot_vap + Q_dot_comb - Q_dot_out) * dt / (cp_ave * m_total)
+
+        # Conservation of Mass
+        press = 0
+        for k in range(aChemicalSet.len()):
+            mass_k = aChemicalSet.get_chemical_mass_by_index(k) + aChemicalSet.get_chemical_massflow_by_index(k) * dt + (aChemicalSet.get_chemical_mass_by_index(k)/m_total) * m_dot_out * dt
+            aChemicalSet.set_chemical_mass(aChemicalSet.get_chemical_by_index(k),mass_k) 
+            press += mass_k * aChemicalSet.get_chemical_by_index(k).get_R() * temp / vol
+
+        
     print_title()
 main()

@@ -1,8 +1,8 @@
 from algorithm import *
 
-class Nozzle:
+class Nozzle: # converging-diverging (DeLaval) nozzle class
 
-    def __init__(self, A_throat, A_exit):
+    def __init__(self, A_throat: float, A_exit: float):
         # GEOMETRY
         self.A_thoat = A_throat # [m]
         self.A_exit = A_exit # [m]
@@ -35,7 +35,6 @@ class Nozzle:
         self.c_star = None
         self.c_F = None
         self.Isp = None
-
 
     def set_gamma(self, gamma):
         self.gamma = gamma

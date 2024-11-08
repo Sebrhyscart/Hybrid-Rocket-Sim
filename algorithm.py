@@ -1,5 +1,9 @@
 import numpy as np
-from CoolProp.CoolProp import PropsSI
+# from CoolProp.CoolProp import PropsSI
+
+N_A = 6.02214076e23
+k_B = 1.380649e-23
+
 
 class InputError(Exception):
     pass

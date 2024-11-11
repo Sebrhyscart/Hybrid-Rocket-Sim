@@ -1,12 +1,13 @@
-from chemical import *
+from Chemical import *
 
 class ChemicalReactionError(Exception):
     pass
 
 class ChemicalReaction:
 
-    def __init__(self, reactants:list[Chemical], products:list[Chemical], stoich_coeff:list[float], Q_reaction:float):
+    def __init__(self, name:str, reactants:list[Chemical], products:list[Chemical], stoich_coeff:list[float], Q_reaction:float):
         if ((len(reactants) + len(products)) != len(stoich_coeff)): raise ChemicalReactionError("Number of chemical reaction coefficient must match number of reactants and products!")
+        self.name = name
         self.reactants = reactants # array-like of valid coolprop chemical names
         self.products = products # array-like of valid coolprop chemical names
         self.reactant_stoich_coeff = stoich_coeff[:len(reactants)]
@@ -36,3 +37,19 @@ class ChemicalReaction:
 
         P_total = (self.Q_reaction * molflowrate)
         return reactant_flowrates, product_flowrates, P_total
+    
+class ChemicalReactionSet:
+
+    def __init__(self):
+        self.reactions: dict[str, ChemicalReaction] = {}
+
+    def set_reaction(self, aChemicalReaction:ChemicalReaction):
+        self.reactions[aChemicalReaction.name] = aChemicalReaction
+
+    def append_chemical_reaction_list(self, aChemicalReactionList:list[ChemicalReaction]): 
+        # append multiple new chemical reactions to the set
+        for k in range(len(aChemicalReactionList)):
+            self.reactions[aChemicalReactionList[k].name] = aChemicalReactionList[k] 
+
+    def get_reaction(self, reaction_name:str) -> ChemicalReaction:
+        return self.reactions[reaction_name]

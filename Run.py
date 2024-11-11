@@ -56,6 +56,7 @@ class Run:
         if CF_CSTAR:
             c_f_list = [0]
             c_star_list = [0]
+        im1ChemicalSet = self.aChemicalSet.copy()
 
         while((self.aCombustionChamber.r_port < self.aCombustionChamber.r_wall) and (self.aTank.m_oxidizer > 0) and t < endtime):                                                         # While we're not out of fuel or oxidizer ...
             
@@ -94,7 +95,6 @@ class Run:
             T_res = 10*eps # initilize to be > eps
             m_dot_out_res = 10*eps # initilize to be > eps
 
-
             j = 0
             while (P_res >= eps and T_res >= eps and m_dot_out_res >= eps):
                 if VERBOSE: print("\titeration step j =", j)
@@ -106,6 +106,7 @@ class Run:
                 T = (T_list[i-1] + (Q_dot_decomp + Q_dot_vap + Q_dot_comb)*dt / (cp_ave*m_total)) / (1 + m_dot_out*dt / m_total) # Conservation of Energy
                 P = 0 
                 for k in range(self.aChemicalSet.len()):                                                             # Conservation of Mass
+                    mass_k = self.im1ChemicalSet.get_chemical_mass_by_index(k) + self.aChemicalSet.get_chemical_massflow_by_index(k) * dt + (self.im1ChemicalSet.get_chemical_mass_by_index(k)/m_total) * m_dot_out * dt
                     # FIX THIS SECTION
                     # mass_k = self.aChemicalSet.get_chemical_mass_by_index(k) + self.aChemicalSet.get_chemical_massflow_by_index(k) * dt + (self.aChemicalSet.get_chemical_mass_by_index(k)/m_total) * m_dot_out * dt
                     # self.aChemicalSet.set_chemical_mass(self.aChemicalSet.get_chemical_by_index(k),mass_k) 
@@ -122,7 +123,7 @@ class Run:
                     warnings.warn("Warning: Iterator exceeded maximum number of iteration steps", UserWarning)
                     break
             
-
+            im1ChemicalSet = self.aChemicalSet.copy()
 
             if THRUST_ISP: thrust, Isp = self.aNozzle.get_thrust_Isp()
             if CF_CSTAR: c_f, c_star = self.aNozzle.get_thrust_coeff_characteristic_velocity()

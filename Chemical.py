@@ -1,4 +1,5 @@
 from algorithm import *
+import copy
 
 class Chemical: 
     # class for holding the properties of a chemical
@@ -92,6 +93,9 @@ class ChemicalSet:
         # set the mass flow rates of multiple chemicals at once
         for k in range(len(aChemicalList)):
             self.m_dot_species[aChemicalList[k].name] = new_massflow_list[k]
+
+    def copy(self):
+        return copy.deepcopy(self)
 
     def print_chemical_mass(self):
         for key, value in self.m_species.items():

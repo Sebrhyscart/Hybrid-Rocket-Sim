@@ -19,34 +19,34 @@ def main():
     # ============================================================================================================
     N2O = Chemical("N2O")
     N2O.set_mol_weight(34)
-    N2O.set_cp(0.88)
-    N2O.set_cv(0.69)
+    N2O.set_cp(0.88e3)
+    N2O.set_cv(0.69e3)
 
     N2 = Chemical("N2")
     N2.set_mol_weight(28)
-    N2.set_cp(1.04)
-    N2.set_cv(0.743)
+    N2.set_cp(1.04e3)
+    N2.set_cv(0.743e3)
 
     O2 = Chemical("O2")
     O2.set_mol_weight(32)
-    O2.set_cp(0.919)
-    O2.set_cv(0.659)    
+    O2.set_cp(0.919e3)
+    O2.set_cv(0.659e3)    
 
     paraffin = Chemical("paraffin")
     paraffin.set_mol_weight(12*32+66)
-    paraffin.set_cp(1.67) # value for propane not paraffin vapor lol, it probably doesnt matter that much
-    paraffin.set_cv(1.48) # value for propane not paraffin vapor lol, it probably doesnt matter that much 
+    paraffin.set_cp(1.67e3) # value for propane not paraffin vapor lol, it probably doesnt matter that much
+    paraffin.set_cv(1.48e3) # value for propane not paraffin vapor lol, it probably doesnt matter that much 
     paraffin.set_solid_density(900)
 
     H2O = Chemical("H2O")
     H2O.set_mol_weight(18)
-    H2O.set_cp(2.26)
-    H2O.set_cv(1.76) 
+    H2O.set_cp(2.26e3)
+    H2O.set_cv(1.76e3) 
 
     CO2 = Chemical("CO2")
     CO2.set_mol_weight(44)
-    CO2.set_cp(0.844)
-    CO2.set_cv(0.655) 
+    CO2.set_cp(0.844e3)
+    CO2.set_cv(0.655e3) 
 
     decomposition = ChemicalReaction("decomposition", [N2O], [N2, O2], [1,1,1/2], 0)
     vaporization = ChemicalReaction("vaporization", [paraffin],[paraffin],[1,1], 0)
@@ -66,7 +66,7 @@ def main():
     combustion_chamber_pre_fuel_length = 0.05
     combustion_chamber_fuel_length = 0.2
     combustion_chamber_post_fuel_length = 0.05
-    nozzle_throat_radius = 0.02
+    nozzle_throat_radius = 0.04
     nozzle_exit_radius = 0.06
     m_oxidizer = 20
     m_dot_injector = 0.1

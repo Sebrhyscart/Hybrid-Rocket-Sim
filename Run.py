@@ -91,37 +91,45 @@ class Run:
             gamma_ave = self.aChemicalSet.get_ave_gamma()
             self.aNozzle.set_gamma_R(gamma_ave, R_ave)
 
-            P_res = 10*eps # initilize to be > eps
-            T_res = 10*eps # initilize to be > eps
-            m_dot_out_res = 10*eps # initilize to be > eps
+            # P_res = 10*eps # initilize to be > eps
+            # T_res = 10*eps # initilize to be > eps
+            # m_dot_out_res = 10*eps # initilize to be > eps
 
-            j = 0
-            while (P_res >= eps and T_res >= eps and m_dot_out_res >= eps):
-                if VERBOSE: print("\titeration step j =", j)
-                if VERBOSE: print("\tP =", P, "T =", T, "m_dot_out =",m_dot_out)
-                T_jm1 = T # T_j-1
-                P_jm1 = P # P_j-1
-                m_dot_out_jm1 = m_dot_out # m_dot_out_j-1
+            T = (T_list[i-1] + (Q_dot_decomp + Q_dot_vap + Q_dot_comb)*dt / (cp_ave*m_total)) / (1 + m_dot_out*dt / m_total) # Conservation of Energy
+            P = 0 
+            for k in range(self.aChemicalSet.len()):                                                             # Conservation of Mass
+                mass_k = im1ChemicalSet.get_chemical_mass_by_index(k) + self.aChemicalSet.get_chemical_massflow_by_index(k) * dt + (im1ChemicalSet.get_chemical_mass_by_index(k)/m_total) * m_dot_out * dt
+                self.aChemicalSet.set_chemical_mass(self.aChemicalSet.get_chemical_by_index(k),mass_k) 
+                P += mass_k * self.aChemicalSet.get_chemical_by_index(k).get_R() * T / V
+            m_dot_out = self.aNozzle.get_flowrate_from_stagnation(P, T)
 
-                T = (T_list[i-1] + (Q_dot_decomp + Q_dot_vap + Q_dot_comb)*dt / (cp_ave*m_total)) / (1 + m_dot_out*dt / m_total) # Conservation of Energy
-                P = 0 
-                for k in range(self.aChemicalSet.len()):                                                             # Conservation of Mass
-                    mass_k = self.im1ChemicalSet.get_chemical_mass_by_index(k) + self.aChemicalSet.get_chemical_massflow_by_index(k) * dt + (self.im1ChemicalSet.get_chemical_mass_by_index(k)/m_total) * m_dot_out * dt
-                    # FIX THIS SECTION
-                    # mass_k = self.aChemicalSet.get_chemical_mass_by_index(k) + self.aChemicalSet.get_chemical_massflow_by_index(k) * dt + (self.aChemicalSet.get_chemical_mass_by_index(k)/m_total) * m_dot_out * dt
-                    # self.aChemicalSet.set_chemical_mass(self.aChemicalSet.get_chemical_by_index(k),mass_k) 
-                    # P += mass_k * self.aChemicalSet.get_chemical_by_index(k).get_R() * T / V
-                m_dot_out = self.aNozzle.get_flowrate_from_stagnation(P, T)
+            if VERBOSE: print("\tP =", round(P,1), " | T =", round(T,1), " | m_dot_out =", round(m_dot_out,2))
+
+            # j = 0
+            # while (P_res >= eps and T_res >= eps and m_dot_out_res >= eps):
+            #     T_jm1 = T # T_j-1
+            #     P_jm1 = P # P_j-1
+            #     m_dot_out_jm1 = m_dot_out # m_dot_out_j-1
+
+            #     T = (T_list[i-1] + (Q_dot_decomp + Q_dot_vap + Q_dot_comb)*dt / (cp_ave*m_total)) / (1 + m_dot_out*dt / m_total) # Conservation of Energy
+            #     P = 0 
+            #     for k in range(self.aChemicalSet.len()):                                                             # Conservation of Mass
+            #         mass_k = im1ChemicalSet.get_chemical_mass_by_index(k) + self.aChemicalSet.get_chemical_massflow_by_index(k) * dt + (im1ChemicalSet.get_chemical_mass_by_index(k)/m_total) * m_dot_out * dt
+            #         self.aChemicalSet.set_chemical_mass(self.aChemicalSet.get_chemical_by_index(k),mass_k) 
+            #         P += mass_k * self.aChemicalSet.get_chemical_by_index(k).get_R() * T / V
+            #     m_dot_out = self.aNozzle.get_flowrate_from_stagnation(P, T)
                 
-                P_res = abs((P - P_jm1)/P)
-                print("P_res", P_res)
-                T_res = abs((T - T_jm1)/T)
-                m_dot_out_res = abs((m_dot_out - m_dot_out_jm1)/m_dot_out)
-                j += 1
+            #     if VERBOSE: print("\titeration step j =", j)
+            #     if VERBOSE: print("\tP =", round(P,1), " | T =", round(T,1), " | m_dot_out =", round(m_dot_out,2))
 
-                if (j > max_iter):
-                    warnings.warn("Warning: Iterator exceeded maximum number of iteration steps", UserWarning)
-                    break
+            #     P_res = abs((P - P_jm1)/P)
+            #     T_res = abs((T - T_jm1)/T)
+            #     m_dot_out_res = abs((m_dot_out - m_dot_out_jm1)/m_dot_out)
+            #     j += 1
+
+            #     if (j > max_iter):
+            #         warnings.warn("Warning: Iterator exceeded maximum number of iteration steps", UserWarning)
+            #         break
             
             im1ChemicalSet = self.aChemicalSet.copy()
 
@@ -143,4 +151,4 @@ class Run:
 
             if i>10: break # <--------------------------------------------------------------------------------- REMOVE
         
-        if VERBOSE: print("Number of timesteps =", i, "Final time =", t)
+        if VERBOSE: print("Number of timesteps =", round(i,0), "Final time =", round(t,6))

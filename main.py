@@ -83,7 +83,7 @@ def main():
     
     aRun = Run(aChemicalSet, aChemicalReactionSet, aTank, aInjector, aCombustionChamber, aNozzle)
 
-    aRun.run(VERBOSE = True)
+    aRun.run(VERBOSE = True, endtime = 0.01)
 
 
 

@@ -148,7 +148,5 @@ class Run:
                 c_f, c_star = self.aNozzle.get_thrust_coeff_characteristic_velocity()
                 c_f_list.append(c_f)
                 c_star_list.append(c_star)
-
-            if i>10: break # <--------------------------------------------------------------------------------- REMOVE
         
         if VERBOSE: print("Number of timesteps =", round(i,0), "Final time =", round(t,6))

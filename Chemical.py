@@ -127,7 +127,7 @@ class ChemicalSet:
 
     def get_chemical_massflow_by_index(self,k:int) -> float: 
         # return the mass flow rate of the 'k_th' chemical
-        return list(self.m_species.values())[k]
+        return list(self.m_dot_species.values())[k]
 
     def len(self) -> int: 
         # return the number of chemicals in the chemical set

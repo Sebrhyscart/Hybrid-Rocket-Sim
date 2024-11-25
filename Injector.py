@@ -7,7 +7,10 @@ class Injector: # oxidizer injector
 
     def set_flowrate(self, flowrate:float):
         self.flowrate = flowrate
-
-    def get_flowrate(self) -> float:
-        return self.flowrate
+    
+    def flowrate_step_func(self, t, t0) -> float:
+        if t < t0:
+            return self.flowrate
+        else:
+            return 0
     

@@ -2,6 +2,8 @@ import numpy as np
 import warnings
 # from CoolProp.CoolProp import PropsSI
 
+np.seterr(invalid='raise')
+
 N_A = 6.02214076e23
 k_B = 1.380649e-23
 

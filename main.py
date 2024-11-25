@@ -1,4 +1,6 @@
 from Run import *
+import matplotlib.pyplot as plt
+
 
 ## Base SI units are used for all quantities throughout
 ## Time - [s]
@@ -67,7 +69,7 @@ def main():
     combustion_chamber_fuel_length = 0.2
     combustion_chamber_post_fuel_length = 0.05
     nozzle_throat_radius = 0.04
-    nozzle_exit_radius = 0.06
+    nozzle_exit_radius = 0.05
     m_oxidizer = 20
     m_dot_injector = 0.1
 
@@ -75,120 +77,32 @@ def main():
     aInjector = Injector(m_dot_injector)
     aCombustionChamber = CombustionChamber(combustion_chamber_outer_wall_radius, combustion_chamber_port_radius, combustion_chamber_fuel_length,
                                            combustion_chamber_pre_fuel_length, combustion_chamber_post_fuel_length)
-    aNozzle = Nozzle((np.pi*nozzle_throat_radius**2), (nozzle_exit_radius**2 / nozzle_throat_radius**2))
+    aNozzle = Nozzle((np.pi*nozzle_throat_radius**2), (np.pi*nozzle_exit_radius**2))
 
     # ============================================================================================================
     # RUN
     # ============================================================================================================
     
     aRun = Run(aChemicalSet, aChemicalReactionSet, aTank, aInjector, aCombustionChamber, aNozzle)
+    t,P,T = aRun.run(VERBOSE = True, dt = 1e-4 ,endtime = 1)
 
-    aRun.run(VERBOSE = True, endtime = 0.01)
+    plt.plot(t,P)
 
-
-
-
-
-
-
-
-
-
-
-
-
-    # eps = 1e-3 # size of residual
-    # max_iter = 100 # max number of iterations in iterative methods
-    # dt = 1e-3 # time step
-    # i = 0
-
-    # # Lists of values to record
-    # time = 0
-    # times = []
-    # P_list = []
-    # T_list = []
-    # thrust_list = []
-    # Isp_list = []
-
-    # # Oxidizer and oxidizer flow rate
-    # m_oxidizer = 20
-    # injector_flow_rate = 1
-    # aInjector.set_flowrate(injector_flow_rate)
-
-    # # Geometry variables
-    # r_port = aCombustionChamber.get_r_port()
-    # r_wall = combustion_chamber_outer_wall_radius
-    # l_fuel = combustion_chamber_fuel_length
-
-    # m_dot_out = 0
-    # V = (np.pi * r_port**2 * l_fuel) + (np.pi * r_wall**2 * (combustion_chamber_pre_fuel_length + combustion_chamber_post_fuel_length))
-    # T = 300
-    # aChemicalSet.set_atmospheric_conditions(V,T)
-
-    # while((r_port < r_wall) and (m_oxidizer >= 0)):                                                         # While we're not out of fuel or oxidizer ...
-    #     print("i =", i)
-    #     aChemicalSet.set_chemical_massflow(N2O,aInjector.get_flowrate())                                    # set flowrate entering the combustion chamber this timestep
-    #     m_dot_N2O_, (m_dot_N2, m_dot_O2), Q_dot_decomp = decomposition.complete_reaction([aInjector.get_flowrate()]) # N2O -> N2 + 1/2 O2
-    #     m_dot_N2O = m_dot_N2O_
-    #     aChemicalSet.set_multiple_chemical_massflow([N2O, N2, O2],[m_dot_N2O, m_dot_N2, m_dot_O2])          # add flowrates to chemical set
-    #     m_oxidizer = m_oxidizer - aInjector.get_flowrate()*dt
-
-    #     r_dot = aCombustionChamber.regression_rate(aInjector.get_flowrate() / (np.pi * r_port**2))          # regression rate
-    #     m_dot_paraffin = paraffin.get_solid_density() * r_dot * 2 * np.pi * r_port * l_fuel                 # flow rate of paraffin liquid + vapor from regression
-    #     aChemicalSet.set_chemical_massflow(paraffin,m_dot_paraffin)                                         # add flowrate to chemical set
-    #     _, _, Q_dot_vap = vaporization.complete_reaction([m_dot_paraffin])                                    # rate latient heat is consumed by vaporizing paraffin
+    # aNozzle = Nozzle((np.pi*nozzle_throat_radius**2), (np.pi*nozzle_exit_radius**2))
+    # aNozzle.set_gamma(1.4)
+    # aNozzle.set_R(287.05)
+    # aNozzle.set_back_pressure(101325)
+    # P_0_list = np.linspace(1.5*101325,2*101325,10)
+    # for i in range(len(P_0_list)):
+    #     aNozzle.calc_flowrate(P_0_list[i], 300)
+    #     print("----------------------------------------------------")
+    #     print("Pressure Ratio P_0/P_b:",round(P_0_list[i]/101325,2))
+    #     print("Area Ratio A_e/A_t:",round(aNozzle.A_e_over_A_star,2))
+    #     print("Exit Pressure:",round(aNozzle.P_exit,2))
+    #     print("Exit Temperature:",round(aNozzle.T_exit,2))
+    #     print("Choked:",aNozzle.choked)
+    #     print("Flowrate:",round(aNozzle.flowrate,2))
+    #     print("Exit Mach:",round(aNozzle.M_exit,2))
+    #     print("Exit Velocity:",round(aNozzle.v_eff,2))
         
-    #     V = V + 2 * np.pi * r_port * l_fuel * r_dot * dt
-    #     r_port = r_port + r_dot*dt
-    #     aCombustionChamber.set_r_port(r_port)
-
-    #     (m_dot_paraffin, m_dot_O2), (m_dot_H2O, m_dot_CO2), Q_dot_comb = combustion.complete_reaction([m_dot_paraffin, m_dot_O2]) # C32H66 + 97/2 O2 -> 33 H2O + 32 CO2
-    #     aChemicalSet.set_multiple_chemical_massflow([paraffin, O2, H2O, CO2],[m_dot_paraffin, m_dot_O2, m_dot_H2O, m_dot_CO2]) # add flowrate to chemical set
-
-    #     m_total = aChemicalSet.get_total_mass()
-    #     cp_ave = aChemicalSet.get_ave_cp()
-    #     R_ave = aChemicalSet.get_ave_R()
-    #     gamma_ave = aChemicalSet.get_ave_gamma()
-    #     aNozzle.set_gamma_R(gamma_ave, R_ave)
-
-    #     P_res = 10*eps # initilize to be > eps
-    #     T_res = 10*eps # initilize to be > eps
-    #     m_dot_out_res = 10*eps # initilize to be > eps
-    #     j = 0
-    #     P = 101325
-    #     while (P_res >= eps and T_res >= eps and m_dot_out_res >= eps):
-    #         T_prior = T
-    #         P_prior = P
-    #         m_dot_out_prior = m_dot_out
-
-    #         T = (T_prior + (Q_dot_decomp + Q_dot_vap + Q_dot_comb)*dt / (cp_ave*m_total)) / (1 + m_dot_out*dt / m_total) # Conservation of Energy
-    #         P = 0 
-    #         for k in range(aChemicalSet.len()):                                                             # Conservation of Mass
-    #             mass_k = aChemicalSet.get_chemical_mass_by_index(k) + aChemicalSet.get_chemical_massflow_by_index(k) * dt + (aChemicalSet.get_chemical_mass_by_index(k)/m_total) * m_dot_out * dt
-    #             aChemicalSet.set_chemical_mass(aChemicalSet.get_chemical_by_index(k),mass_k) 
-    #             P += mass_k * aChemicalSet.get_chemical_by_index(k).get_R() * T / V
-    #         m_dot_out = aNozzle.get_flowrate_from_stagnation(P, T)
-            
-    #         P_res = abs((P - P_prior)/P)
-    #         T_res = abs((T - T_prior)/T)
-    #         m_dot_out_res = abs((m_dot_out - m_dot_out_prior)/m_dot_out)
-    #         j += 1
-    #         if (j > max_iter):
-    #             warnings.warn("Warning: Iterator exceeded maximum number of iteration steps", UserWarning)
-    #             break
-        
-    #     thrust, Isp = aNozzle.get_thrust_Isp()
-
-    #     i += 1
-    #     time += dt
-    #     times.append(time)
-
-    #     P_list.append(P)
-    #     T_list.append(T)
-    #     thrust_list.append(thrust)
-    #     Isp_list.append(Isp)
-
-    #     if i>10: break
-        
-    # print("Number of timesteps:", i)
 main()

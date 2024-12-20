@@ -191,18 +191,3 @@ class ChemicalSet:
                     self.set_chemical_mass(self.get_chemical_by_index(k), 0.0)
         else:
             raise KeyError("No instances of \"N2\" or \"O2\" exist in your ChemicalSet")
-
-# class CoolProp_Chemical(Chemical):
-
-#     def __init__(self, name, T, rho):
-#         self.name = name # must be a valid coolprop chemical name!
-#         self.mol_weight = PropsSI(self.name,"molemass")/1000
-#         self.cp = PropsSI("C", "T", T, "D", rho, self.name)
-#         self.cv = PropsSI("O", "T", T, "D", rho, self.name)
-#         self.R = self.cp - self.cv
-
-#         self.T = T
-#         self.rho = rho
-#         self.P = PropsSI("P", "T", T, "D", rho, self.name)
-#         self.s = PropsSI("S", "T", T, "D", rho, self.name)
-#         self.h = PropsSI("H", "T", T, "D", rho, self.name)

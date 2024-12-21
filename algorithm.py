@@ -1,6 +1,5 @@
 import numpy as np
 import warnings
-# from CoolProp.CoolProp import PropsSI
 
 np.seterr(invalid='raise')
 
@@ -10,7 +9,7 @@ k_B = 1.380649e-23
 class InputError(Exception):
     pass
 
-def golden_search(f, a, b, tol=1e-6):
+def golden_search(f, a, b, tol=1e-8):
     # ChatGPT's golden-search algorithm
     golden_ratio = (np.sqrt(5) - 1) / 2
     c = b - golden_ratio * (b - a)

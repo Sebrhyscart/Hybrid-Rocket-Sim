@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 ## Molecular weight - [g/mol]
 ## Entropy or heat capcity - [J/kg/k]
 
+n2 = ChemicalSet()
+
 def main():
     print_title()
 
@@ -50,7 +52,7 @@ def main():
     CO2.set_cv(0.655e3) 
 
     decomposition = ChemicalReaction("decomposition", [N2O], [N2, O2], [1,1,1/2], 0)
-    vaporization = ChemicalReaction("vaporization", [paraffin],[paraffin],[1,1], 0)
+    vaporization = ChemicalReaction("vaporization", [paraffin],[paraffin],[1,1], (-1.46e5-1.6e6)*paraffin.mol_weight/1000)
     combustion = ChemicalReaction("combustion", [paraffin, O2], [H2O, CO2], [1,97/2,33,32], 19.87e6)
 
     aChemicalSet = ChemicalSet()
@@ -67,56 +69,31 @@ def main():
     combustion_chamber_pre_fuel_length = 0.05
     combustion_chamber_fuel_length = 0.2
     combustion_chamber_post_fuel_length = 0.05
-    nozzle_throat_radius = 0.005
+    nozzle_throat_radius = 0.01
     nozzle_exit_radius = 0.02
     m_oxidizer = 20
-    m_dot_injector = 0.1
+    m_dot_injector = 0.2
 
     aTank = Tank(m_oxidizer)
     aInjector = Injector(m_dot_injector)
     aCombustionChamber = CombustionChamber(combustion_chamber_outer_wall_radius, combustion_chamber_port_radius, combustion_chamber_fuel_length,
                                            combustion_chamber_pre_fuel_length, combustion_chamber_post_fuel_length)
-    aNozzle = Nozzle((np.pi*combustion_chamber_outer_wall_radius**2), (np.pi*nozzle_throat_radius**2), (np.pi*nozzle_exit_radius**2))
+    aNozzle = Nozzle((np.pi*nozzle_throat_radius**2), (np.pi*nozzle_exit_radius**2))
 
     # ============================================================================================================
     # RUN
     # ============================================================================================================
 
     aRun = Run(aChemicalSet, aChemicalReactionSet, aTank, aInjector, aCombustionChamber, aNozzle)
-    t,P,T = aRun.run(VERBOSE = True, THRUST_ISP = False, dt = 1e-3 ,endtime = 1)
-    # plt.plot(t,P)
 
-    # aNozzle.set_gamma(1.4)
-    # aNozzle.set_R(287.05)
-    # aNozzle.set_back_pressure(101325)
-    # P_0_list = np.linspace(1.5*101325,3*101325,10)
-    # T_0 = 2000
+    aRun.run(VERBOSE=True, dt=1e-3, endtime=0.2)
 
-    # m_dot_list = np.zeros(len(P_0_list))
-    # for i in range(len(P_0_list)):
-    #     P_0 = P_0_list[i]
-    #     aNozzle.calc_flowrate(P_0, T_0)
-    #     m_dot_list[i] = aNozzle.flowrate
+    # r_throat_list = [0.0025,0.005,0.0075,0.01,0.0125,0.015,0.0175,0.02]
+    # for r_throat in r_throat_list:
+    #     filename = "rt=" + str(r_throat)
 
-        # print("----------------------------------------------------")
-        # print("Pressure Ratio P_0/P_b:",round(P_0_list[i]/101325,2))
-        # print("Area Ratio A_e/A_t:",round(aNozzle.A_over_A_star,2))
-        # print("Exit Pressure:",round(aNozzle.P_exit,2))
-        # print("Exit Temperature:",round(aNozzle.T_exit,2))
-        # print("Choked:",aNozzle.choked)
-        # print("Flowrate:",round(aNozzle.flowrate,2))
-        # print("Exit Mach:",round(aNozzle.M_exit,2))
-        # print("Exit Velocity:",round(aNozzle.v_eff,2))
+    #     aRun.aNozzle.A_throat = np.pi * r_throat**2
+    #     aRun.run(output_file_name=filename, dt=1e-3, endtime=5)
+    #     print("Done run ", filename)
 
-    # plt.style.use('dark_background')
-    # plt.figure(figsize=(10, 5))
-    # plt.plot(P_0_list, m_dot_list, label='flowrate')
-    # plt.title('Flowrate vs Pressure')
-    # plt.xlabel('Pressure (Pa)')
-    # plt.ylabel('Flowrate')
-    # plt.legend()
-    # plt.tight_layout()
-    # plt.savefig('flowrate_vs_pressure.png')  # Save plot as an image
-    # plt.show()
-        
 main()

@@ -24,53 +24,63 @@ header = '''               .-==:
  ::           :.    :.           :. 
  ========================================================================================'''
 
-output_file_name = "verbose.o"
-data_file_name = "data.o"
-
 def print_title():
     global header
     print(header)
 
-def new_file():
-    global output_file_name
+def new_file(filename):
     """
     Removes the old instance of the file with the given name, if it exists, 
     so that a new file can be created.
+
+    Parameters:
+    filename: Name of the file to write over
     """
+    if filename != None:
+        output_file_name = "verbose_printout_" + filename + ".o"
+    else:
+        output_file_name = "verbose_printout.o"
+
     try:
         if os.path.exists(output_file_name):
             os.remove(output_file_name)
-            print(f"Existing file '{output_file_name}' removed.")
-        else:
-            print(f"File '{output_file_name}' does not exist, ready to create a new one.")
     except Exception as e:
         print(f"An error occurred while trying to remove the file: {e}")
 
-def new_data():
-    global data_file_name
+def new_data(filename):
     """
     Removes the old instance of the file with the given name, if it exists, 
     so that a new file can be created.
+
+    Parameters:
+    filename: Name of the file to write over
     """
+    if filename != None:
+        data_file_name = filename + ".o"
+    else:
+        data_file_name = "data.o"
+
     try:
         if os.path.exists(data_file_name):
             os.remove(data_file_name)
-            print(f"Existing file '{data_file_name}' removed.")
-        else:
-            print(f"File '{data_file_name}' does not exist, ready to create a new one.")
     except Exception as e:
         print(f"An error occurred while trying to remove the file: {e}")
 
-def print_file(*args, sep=' ', end='\n'):
+def print_file(filename, *args, sep=' ', end='\n'):
     """
     Mimics the behavior of the print function but writes to a global file.
 
     Parameters:
+    filename: Name of the file to write to
     *args: Variable arguments to be written to the file.
     sep (str): Separator to be used between arguments. Default is a single space.
     end (str): String appended after the last argument. Default is a newline. 
     """
-    global output_file_name
+    if filename != None:
+        output_file_name = "verbose_printout_" + filename + ".o"
+    else:
+        output_file_name = "verbose_printout.o"
+
     try:
         # Open the file in append mode
         with open(output_file_name, 'a') as file:
@@ -79,16 +89,21 @@ def print_file(*args, sep=' ', end='\n'):
     except Exception as e:
         print(f"An error occurred in writing output file: {e}")
 
-def print_data(*args, sep=' ', end='\n'):
+def print_data(filename, *args, sep=' ', end='\n'):
     """
     Mimics the behavior of the print function but writes to a global file.
 
     Parameters:
+    filename: Name of the file to write to
     *args: Variable arguments to be written to the file.
     sep (str): Separator to be used between arguments. Default is a single space.
     end (str): String appended after the last argument. Default is a newline. 
     """
-    global data_file_name
+    if filename != None:
+        data_file_name = filename + ".o"
+    else:
+        data_file_name = "data.o"
+
     try:
         # Open the file in append mode
         with open(data_file_name, 'a') as file:

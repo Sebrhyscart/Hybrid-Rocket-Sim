@@ -6,6 +6,9 @@ class ChemicalReactionError(Exception):
 class ChemicalReaction:
 
     def __init__(self, name:str, reactants:list[Chemical], products:list[Chemical], stoich_coeff:list[float], Q_reaction:float):
+        '''
+        Defines and holds information about chemical reactions. Performs reactions based on stoicheometry.
+        '''
         if ((len(reactants) + len(products)) != len(stoich_coeff)): raise ChemicalReactionError("Number of chemical reaction coefficient must match number of reactants and products!")
         self.name = name
         self.reactants = reactants # array-like of valid coolprop chemical names
@@ -15,6 +18,17 @@ class ChemicalReaction:
         self.Q_reaction= Q_reaction
 
     def complete_reaction(self, reactant_flowrates:list[float]) -> tuple[list[float], list[float], float]:
+        '''
+        Ideal chemical reaction class, based on stoicheometry.
+
+        Parameters:
+            reactant_flowrates: List of reactant flow rates (kg/s)
+
+        Returns:
+            reactant_flowrates: List of the remaining reactants flow rates (kg/s) after the reaction
+            product_flowrates: List of the products flow rates (kg/s) after the reaction
+            P_total: total power of the chemical reaction (W)
+        '''
         if (len(self.reactants) != len(reactant_flowrates)): raise ChemicalReactionError("Must specify a reactant flow rate for each reactant!")
         
         reactant_molflowrates = [0] * len(self.reactants)

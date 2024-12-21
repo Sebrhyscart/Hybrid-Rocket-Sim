@@ -1,8 +1,11 @@
 from algorithm import *
 
-class Injector: # oxidizer injector
+class Injector:
 
     def __init__(self, flowrate):
+        '''
+        Oxidizer Injector class. Returns a flowrate parameter or returns a flowrate vs time function
+        '''
         self.flowrate = flowrate
 
     def set_flowrate(self, flowrate:float):

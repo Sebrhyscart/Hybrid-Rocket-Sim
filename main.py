@@ -1,5 +1,4 @@
 from Run import *
-import matplotlib.pyplot as plt
 
 ## Base SI units are used for all quantities throughout
 ## Time - [s]
@@ -11,8 +10,6 @@ import matplotlib.pyplot as plt
 ## Density - [kg/m3]
 ## Molecular weight - [g/mol]
 ## Entropy or heat capcity - [J/kg/k]
-
-n2 = ChemicalSet()
 
 def main():
     print_title()
@@ -71,6 +68,7 @@ def main():
     combustion_chamber_post_fuel_length = 0.05
     nozzle_throat_radius = 0.01
     nozzle_exit_radius = 0.02
+    diverging_section_nozzle_length = 0.04
     m_oxidizer = 20
     m_dot_injector = 0.2
 
@@ -78,22 +76,33 @@ def main():
     aInjector = Injector(m_dot_injector)
     aCombustionChamber = CombustionChamber(combustion_chamber_outer_wall_radius, combustion_chamber_port_radius, combustion_chamber_fuel_length,
                                            combustion_chamber_pre_fuel_length, combustion_chamber_post_fuel_length)
-    aNozzle = Nozzle((np.pi*nozzle_throat_radius**2), (np.pi*nozzle_exit_radius**2))
+    aNozzle = Nozzle((np.pi*nozzle_throat_radius**2), (np.pi*nozzle_exit_radius**2), diverging_section_nozzle_length)
 
     # ============================================================================================================
     # RUN
     # ============================================================================================================
 
     aRun = Run(aChemicalSet, aChemicalReactionSet, aTank, aInjector, aCombustionChamber, aNozzle)
+    aRun.run(PLOT=True, VERBOSE=False, dt=1e-3, endtime=0.1, output_name="short")
 
-    aRun.run(VERBOSE=True, dt=1e-3, endtime=0.2)
+    # P_list = np.linspace(101325.01,6*101325,1000)
+    # T_0 = 3000
+    # aNozzle.set_back_pressure(101325)
+    # aNozzle.set_gamma(1.4)
+    # aNozzle.set_R(270)
 
-    # r_throat_list = [0.0025,0.005,0.0075,0.01,0.0125,0.015,0.0175,0.02]
-    # for r_throat in r_throat_list:
-    #     filename = "rt=" + str(r_throat)
+    # m_dot = []
+    # param = []
+    # for P_0 in P_list:
+    #     aNozzle.calc_flowrate(P_0,T_0)
+    #     m_dot.append(aNozzle.flowrate)
+    #     # if aNozzle.M_exit > 1:
+    #     #     param.append(aNozzle.P_exit*aNozzle.P2_over_P1_shock(aNozzle.M_exit))
+    #     # else:
+    #     #     param.append(aNozzle.P_exit)
+    #     param.append(aNozzle.x_shock)
 
-    #     aRun.aNozzle.A_throat = np.pi * r_throat**2
-    #     aRun.run(output_file_name=filename, dt=1e-3, endtime=5)
-    #     print("Done run ", filename)
+    # plt.plot(P_list,m_dot)
+    # plt.show()
 
 main()

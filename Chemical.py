@@ -181,7 +181,7 @@ class ChemicalSet:
         '''
         Return the mass of this chemical
         '''
-        return self.m_species[aChemical:Chemical.get_name()]
+        return self.m_species[aChemical.get_name()]
     
     def get_chemical_mass_by_index(self,k:int) -> float: 
         '''
@@ -193,7 +193,7 @@ class ChemicalSet:
         '''
         Return the massflow of this chemical
         '''
-        return self.m_dot_species[aChemical:Chemical.get_name()]
+        return self.m_dot_species[aChemical.get_name()]
 
     def get_chemical_massflow_by_index(self,k:int) -> float: 
         '''

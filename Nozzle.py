@@ -1,15 +1,19 @@
 from algorithm import *
 from scipy.optimize import fsolve
 
+class NozzleError(Exception):
+    pass
+
 class Nozzle:
 
-    def __init__(self, A_throat:float, A_exit:float):
+    def __init__(self, A_throat:float, A_exit:float, length:float):
         '''
         Converging-Diverging (DeLaval) nozzle class. It uses isentropic compressible flow equations to model the pressure, temperature, flowrate, 
         and Mach number in the nozzle. From this, thrust and specific impulse (Isp) is calculated.
         '''
         self.A_throat = A_throat                    # [m] throat area
         self.A_exit = A_exit                        # [m] exit area
+        self.length = length                        # [m] length of diverging section
         self.gamma = None                           # specific heat capacity ratio
         self.R = None                               # [J/kg/K] gas constant
         self.P_0 = None                             # [Pa] Stagnation pressure
@@ -21,6 +25,8 @@ class Nozzle:
         self.T_exit = None                          # [K] exit temperature
         self.M_exit = None                          # exit Mach number
         self.v_eff = None                           # effective Nozzle velocity
+        self.M_throat = None
+        self.x_shock = None
 
     def set_gamma(self, gamma:float):
         self.gamma = gamma
@@ -43,10 +49,8 @@ class Nozzle:
         Returns:
             float: Mach number corresponding to the given area ratio.
         """
-        gamma = self.gamma
         def func(M):
-            return (((gamma + 1) / 2) ** (-(gamma + 1) / (2 * (gamma - 1)))) * \
-                ((1 + ((gamma - 1) / 2) * M**2) ** ((gamma + 1) / (2 * (gamma - 1)))) / M - A_ratio
+            return self.A_over_Astar(M) - A_ratio
 
         # Initial guess for supersonic and subsonic solutions
         #   Solve by Newton's Method - supply initial guess for Mach number
@@ -73,18 +77,19 @@ class Nozzle:
         '''
         self.P_0 = P_0
         self.T_0 = T_0
+        if self.P_b == None: raise NozzleError("Define a back pressure (self.P_b) before calling calc_flowrate(P_0, T_0)")
 
         if (P_0 > self.P_b):
             # Assuming subsonic flow, calculate exit Mach number 
             M_exit = np.sqrt(2/(self.gamma-1) * ((self.P_b/P_0) ** (-(self.gamma-1)/self.gamma) - 1))
 
             # Find the area required to choak this flow, A*
-            A_star = self.A_exit / ((((self.gamma+1)/2)**(-(self.gamma+1)/(2*(self.gamma-1)))) * ((1 + ((self.gamma-1)/2) * M_exit**2)**((self.gamma+1)/(2*(self.gamma-1)))) / M_exit)
+            A_star = self.A_exit / self.A_over_Astar(M_exit)
             # Find the mach number at the throat based on the area ratio A_throat/A*
             M_throat = self.mach_number_solver(self.A_throat/A_star, supersonic=False)
 
-            P_throat = P_0 / ((1 + (self.gamma-1)/2 * M_throat**2) ** ((self.gamma)/(self.gamma-1)))
-            T_throat = T_0 / ((1 + (self.gamma-1)/2 * M_throat**2))
+            P_throat = P_0 * self.P_over_P0(M_throat)
+            T_throat = T_0 * self.T_over_T0(M_throat)
             self.flowrate = P_throat * np.sqrt(self.gamma/(self.R * T_throat)) * M_throat * self.A_throat
 
             if (abs(M_throat - 1) < 1e-6):
@@ -92,21 +97,32 @@ class Nozzle:
                 self.choked = True
                 # Assuming fully expanded flow, the exit Mach number, M_exit is a function of A_e / A_t
                 M_exit = self.mach_number_solver(self.A_exit/self.A_throat, supersonic=True)
-
             else:
                 self.choked = False
                 
+            self.M_throat = M_throat
+            
             # Exit pressure and temperature and speed of sound are a function of M_exit
-            P_exit = P_0 * (1 + ((self.gamma-1)/2)*M_exit**2)**(-(self.gamma)/(self.gamma-1))
-            T_exit = T_0 * ((1 + ((self.gamma-1)/2)*M_exit)**(-1))
+            P_exit = P_0 * self.P_over_P0(M_exit)
+            T_exit = T_0 * self.T_over_T0(M_exit)
             speed_of_sound_exit = np.sqrt(self.gamma * self.R * T_exit)
 
             # Shock in the nozzle if P_shock_exit < back pressure
-            P_shock_exit = P_exit * (2*self.gamma*M_exit - (self.gamma - 1)) / (self.gamma + 1)
-            if(M_exit > 1 and P_shock_exit <= self.P_b): # Approximate all shocks positions in nozzle as shock at exit
-                P_exit = P_exit * ((2*self.gamma*M_exit**2 - (self.gamma-1)) / (self.gamma+1))
-                T_exit = T_exit * ((((self.gamma-1)*M_exit**2 + 2) * (2*self.gamma*M_exit**2 - (self.gamma-1))) / ((self.gamma-1)*M_exit**2))
-                M_exit = np.sqrt(((self.gamma-1)*M_exit**2 + 2) / (2*self.gamma*M_exit**2 - (self.gamma-1)))
+            if (M_exit > 1 and P_exit * self.P2_over_P1_shock(M_exit) <= self.P_b): 
+                # location of shock in the nozzle
+                x_shock = self.shock_position_in_nozzle_solver(P_0)
+                self.x_shock = x_shock
+                A_shock = self.Area_vs_position(x_shock)
+                # Mach number at postion x
+                M_x1 = self.mach_number_solver(A_shock/self.A_throat, supersonic=True)
+                # New stagnation pressure after the shock
+                P_02 = P_0 * self.P02_over_P01_shock(M_x1)
+                # exit mach number based on new stagnation pressure
+                M_exit = np.sqrt(2/(self.gamma-1) * ((self.P_b/P_02) ** (-(self.gamma-1)/self.gamma) - 1))
+                # Pressure at exit of nozzle based on loss of stagnation pressure over shock then isentopic contraction
+                P_02 * self.P_over_P0(M_exit)
+                # No loss in stagnation temperature over a shock
+                T_exit = T_0 * self.T_over_T0(M_exit)
                 speed_of_sound_exit = np.sqrt(self.gamma * self.R * T_exit)
 
             self.P_exit = P_exit
@@ -143,3 +159,73 @@ class Nozzle:
         c_F = thrust / (self.P_0 * self.A_throat)
         c_star = np.sqrt(((self.R * self.T_0)/self.gamma)*((self.gamma+1)/2)**((self.gamma+1)/(self.gamma-1)))
         return c_F, c_star
+    
+    def T_over_T0(self, M):
+        return ((1 + (self.gamma-1)/2 * M**2))**(-1)
+        
+    def P_over_P0(self, M):
+        return ((1 + (self.gamma-1)/2 * M**2))**(-(self.gamma)/(self.gamma-1))
+        
+    def T_over_Tstar(self, M):
+        return ((1 + (self.gamma-1)/2 * M**2) / (1 + (self.gamma-1)/2 * M**2))**(-1)
+    
+    def P_over_Pstar(self, M):
+        return ((1 + (self.gamma-1)/2 * M**2) / (1 + (self.gamma-1)/2 * M**2))**(-(self.gamma)/(self.gamma-1))
+        
+    def A_over_Astar(self, M):
+        return ((((self.gamma+1)/2)**(-(self.gamma+1)/(2*(self.gamma-1)))) * ((1 + ((self.gamma-1)/2) * M**2)**((self.gamma+1)/(2*(self.gamma-1)))) / M)
+        
+    def M2_shock(self, M1):
+        if M1 < 1: raise NozzleError("Shocks only exist supersonic -> subsonic!")
+        return np.sqrt(((self.gamma-1)*M1**2 + 2) / (2*self.gamma*M1**2 - (self.gamma-1)))
+        
+    def T2_over_T1_shock(self, M1):
+        if M1 < 1: raise NozzleError("Shocks only exist supersonic -> subsonic!")
+        return ((((self.gamma-1)*M1**2 + 2) * (2*self.gamma*M1**2 - (self.gamma-1))) / ((self.gamma-1)*M1**2))
+        
+    def P2_over_P1_shock(self, M1):
+        if M1 < 1: raise NozzleError("Shocks only exist supersonic -> subsonic!")
+        return ((2*self.gamma*M1**2 - (self.gamma-1)) / (self.gamma+1))
+    
+    def P02_over_P01_shock(self, M1):
+        if M1 < 1: raise NozzleError("Shocks only exist supersonic -> subsonic!")
+        return ((((self.gamma+1)*M1**2) / ((self.gamma-1)*M1**2 + 2)) ** (self.gamma / (self.gamma-1))) * (((self.gamma+1) / (2*self.gamma*M1**2-(self.gamma-1))) ** (1 / (self.gamma-1)))
+        
+    def Area_vs_position(self,x):
+        '''
+        Linear expanding nozzle contour
+        '''
+        r_throat = np.sqrt(self.A_throat / np.pi)
+        r_exit = np.sqrt(self.A_exit / np.pi)
+        r_vs_x = r_throat + (r_exit - r_throat) * x / self.length
+        return np.pi * r_vs_x ** 2
+
+    def shock_position_in_nozzle_solver(self, P_0):
+        '''
+        Determines the location of a shock in the nozzle
+        '''
+        def exit_pressure_after_shock_at_x(x):
+            # Area at position x
+            A_x = self.Area_vs_position(x)
+            # Mach number at postion x
+            M_x1 = self.mach_number_solver(A_x/self.A_throat, supersonic=True)
+            # New stagnation pressure after the shock
+            P_02 = P_0 * self.P02_over_P01_shock(M_x1)
+            # Mach number after shock
+            M_x2 = self.M2_shock(M_x1)
+            # Area required to choke new subsonic flow
+            A_star = A_x / self.A_over_Astar(M_x2)
+            # Exit mach number from area ratio using this new reference choking area
+            M_exit = self.mach_number_solver(self.A_exit/A_star,supersonic=False)
+            # Pressure at exit of nozzle based on loss of stagnation pressure over shock then isentopic contraction
+            return P_02 * self.P_over_P0(M_exit)
+
+        def func(x):
+            return exit_pressure_after_shock_at_x(x) - self.P_b
+
+        # golden search domain
+        a = 0
+        b = self.length
+        guess = 0.5 * self.length
+
+        return golden_search(func,a,b,tol=1e-8) #fsolve(func, guess)[0]

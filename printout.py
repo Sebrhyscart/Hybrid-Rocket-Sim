@@ -37,13 +37,13 @@ def new_file(filename):
     filename: Name of the file to write over
     """
     if filename != None:
-        output_file_name = "verbose_printout_" + filename + ".o"
+        output_name = "verbose_" + filename + ".o"
     else:
-        output_file_name = "verbose_printout.o"
+        output_name = "verbose.o"
 
     try:
-        if os.path.exists(output_file_name):
-            os.remove(output_file_name)
+        if os.path.exists(output_name):
+            os.remove(output_name)
     except Exception as e:
         print(f"An error occurred while trying to remove the file: {e}")
 
@@ -56,13 +56,13 @@ def new_data(filename):
     filename: Name of the file to write over
     """
     if filename != None:
-        data_file_name = filename + ".o"
+        output_name = filename + ".o"
     else:
-        data_file_name = "data.o"
+        output_name = "data.o"
 
     try:
-        if os.path.exists(data_file_name):
-            os.remove(data_file_name)
+        if os.path.exists(output_name):
+            os.remove(output_name)
     except Exception as e:
         print(f"An error occurred while trying to remove the file: {e}")
 
@@ -77,13 +77,13 @@ def print_file(filename, *args, sep=' ', end='\n'):
     end (str): String appended after the last argument. Default is a newline. 
     """
     if filename != None:
-        output_file_name = "verbose_printout_" + filename + ".o"
+        output_name = "verbose_printout_" + filename + ".o"
     else:
-        output_file_name = "verbose_printout.o"
+        output_name = "verbose_printout.o"
 
     try:
         # Open the file in append mode
-        with open(output_file_name, 'a') as file:
+        with open(output_name, 'a') as file:
             # Join the arguments with the separator and append the end string
             file.write(sep.join(map(str, args)) + end)
     except Exception as e:
@@ -100,13 +100,13 @@ def print_data(filename, *args, sep=' ', end='\n'):
     end (str): String appended after the last argument. Default is a newline. 
     """
     if filename != None:
-        data_file_name = filename + ".o"
+        output_name = filename + ".o"
     else:
-        data_file_name = "data.o"
+        output_name = "data.o"
 
     try:
         # Open the file in append mode
-        with open(data_file_name, 'a') as file:
+        with open(output_name, 'a') as file:
             # Join the arguments with the separator and append the end string
             file.write(sep.join(map(str, args)) + end)
     except Exception as e:

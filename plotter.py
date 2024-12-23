@@ -21,11 +21,12 @@ parameter = data[:,1]
 
 plt.figure(figsize=(10, 5))
 plt.plot(time, parameter)
-plt.title('ISP vs Time')
+plt.title('parameter vs Time')
 plt.xlabel('Time (s)')
-plt.ylabel('ISP')
+plt.ylabel('parameter')
 plt.tight_layout()
-plt.show()
+plt.savefig('parameter_vs_time.png')
+
 
 # # Create the first plot: Pressure vs Time
 # plt.figure(figsize=(10, 5))

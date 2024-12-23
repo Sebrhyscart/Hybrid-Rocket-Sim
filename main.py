@@ -82,7 +82,86 @@ def main():
     # RUN
     # ============================================================================================================
 
-    aRun = Run(aChemicalSet, aChemicalReactionSet, aTank, aInjector, aCombustionChamber, aNozzle)
-    aRun.run(PLOT=False, VERBOSE=False, timestep=1e-4, endtime=1, output_name="short")
+    # aRun = Run(aChemicalSet, aChemicalReactionSet, aTank, aInjector, aCombustionChamber, aNozzle)
+    # aRun.run(PLOT=True, VERBOSE=False, timestep=1e-4, endtime=4, output_name="short")
+
+    # filename = "short"
+    # # Read the header row (8th row, index 7) and data
+    # with open(filename+".o", 'r') as file:
+    #     headers = file.readlines()[7].strip().split()  # Get column names from the header row
+
+    # # Load the rest of the data, skipping the first 7 rows (header and metadata)
+    # data = np.loadtxt(filename+".o", skiprows=8)
+
+    # # Extract the time column
+    # time = data[:, 0]  # First column: Time (s)
+    # flowrate = data[:, 9] * 6.9e6
+    # pressure = data[:, 1]
+
+    # plt.figure(figsize=(10, 5))
+    # plt.plot(time,flowrate,label='flowrate')
+    # plt.plot(time,pressure,label='pressure')
+    # plt.title(f'P_exit vs Time')
+    # plt.xlabel('P_0')
+    # plt.ylabel('P_exit')
+    # plt.legend()
+    # plt.tight_layout()
+    # plt.savefig(f'P_exit_vs_time.png')
+    # plt.close()
+
+    # aNozzle.set_gamma(1.4)
+    # aNozzle.set_R(270)
+    # aNozzle.set_back_pressure(101325)
+
+    # P_list = np.linspace(101325,15*101325,1000)
+    # T_0 = 3000
+
+    # M_throat = []
+    # M_exit = []
+    # P_exit = []
+    # A_star = []
+    # for P_0 in P_list:
+    #     aNozzle.calc_flowrate(P_0,T_0)
+    #     M_throat.append(aNozzle.M_throat)
+    #     M_exit.append(aNozzle.M_exit)
+    #     P_exit.append(aNozzle.P_exit)
+    #     A_star.append(aNozzle.A_star_temp)
+
+    # plt.figure(figsize=(10, 5))
+    # plt.plot(P_list, M_throat)
+    # plt.title(f'M_throat vs Time')
+    # plt.xlabel('P_0')
+    # plt.ylabel('M_throat')
+    # plt.tight_layout()
+    # plt.savefig(f'M_throat_vs_time.png')
+    # plt.close()
+
+    # plt.figure(figsize=(10, 5))
+    # plt.plot(P_list, M_exit)
+    # plt.title(f'M_exit vs Time')
+    # plt.xlabel('P_0')
+    # plt.ylabel('M_exit')
+    # plt.tight_layout()
+    # plt.savefig(f'M_exit_vs_time.png')
+    # plt.close()
+
+    # plt.figure(figsize=(10, 5))
+    # plt.plot(P_list, P_exit)
+    # plt.title(f'P_exit vs Time')
+    # plt.xlabel('P_0')
+    # plt.ylabel('P_exit')
+    # plt.tight_layout()
+    # plt.savefig(f'P_exit_vs_time.png')
+    # plt.close()
+
+    # plt.figure(figsize=(10, 5))
+    # plt.plot(P_list, A_star)
+    # plt.axhline(y=aNozzle.A_throat, color='r', linestyle='--', linewidth=2)
+    # plt.title(f'A_star vs Time')
+    # plt.xlabel('P_0')
+    # plt.ylabel('A_star')
+    # plt.tight_layout()
+    # plt.savefig(f'A_star_vs_time.png')
+    # plt.close()
 
 main()

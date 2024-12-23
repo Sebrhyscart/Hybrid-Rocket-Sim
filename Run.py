@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import os
 import shutil
+import time
 from Chemical import *
 from ChemicalReaction import *
 from Tank import *
@@ -43,6 +44,7 @@ class Run:
             THRUST_ISP: (optional) calculate the thrust and Isp of the engine. Default: False.
             CF_CSTAR: (optional) calcualte the thrust coefficient and characteristic velocity of the engine. Default: False.
         '''
+        start_time = time.time()
 
         print(40*"-","\nRun Mode:\nREGRESSION_MODEL =", REGRESSION_MODEL, "\nVERBOSE =", VERBOSE, "\nPLOT =", PLOT, "\nTHRUST_ISP =", THRUST_ISP, "\nCF_CSTAR =", CF_CSTAR, "\n"+40*"-")
         if VERBOSE:
@@ -77,6 +79,7 @@ class Run:
                        "R(J/kg/K)",
                        "O/F",
                        "M_exit",
+                       "M_throat",
                        "P_exit",
                        "x_shock(m)", 
                        "m_O2(kg)",
@@ -141,6 +144,7 @@ class Run:
                        round(self.aChemicalSet.get_ave_R(),4),
                        0,
                        0,
+                       0,
                        P,
                        0,
                        round(self.aChemicalSet.get_chemical_mass(O2),8),
@@ -192,16 +196,6 @@ class Run:
             # add flowrates to chemical set
             self.aChemicalSet.set_multiple_chemical_massflow([N2O, N2, O2],[m_dot_N2O, m_dot_N2, m_dot_O2])
             # Note: m_dot_N2O_injector is the NOX flowrate BEFORE decomposition, and m_dot_N2O is the NOX flowrate AFTER decomposition
-
-            # # remove some oxidizer from the tank
-            # self.aTank.set_m_oxidizer(self.aTank.m_oxidizer - self.aInjector.sinusoidal_flowrate(t)*dt)
-            # # set flowrate entering the combustion chamber this timestep
-            # self.aChemicalSet.set_chemical_massflow(N2O,self.aInjector.sinusoidal_flowrate(t))
-            # # N2O -> N2 + 1/2 O2
-            # m_dot_N2O_, (m_dot_N2, m_dot_O2), Q_dot_decomp = decomposition.complete_reaction([self.aInjector.sinusoidal_flowrate(t)])
-            # m_dot_N2O = m_dot_N2O_[0]
-            # # add flowrates to chemical set
-            # self.aChemicalSet.set_multiple_chemical_massflow([N2O, N2, O2],[m_dot_N2O, m_dot_N2, m_dot_O2])
 
             if VERBOSE: 
                 print("\tm_dot N2 from decomp =", round(m_dot_N2,3), "[kg/s]")
@@ -338,6 +332,7 @@ class Run:
                            round(self.aNozzle.R,4),
                            round(m_dot_N2O_injector/m_dot_paraffin_grain,4),
                            round(self.aNozzle.M_exit,4),
+                           round(self.aNozzle.M_throat,4),
                            round(self.aNozzle.P_exit,8),
                            round(self.aNozzle.x_shock,8),
                            round(self.aChemicalSet.get_chemical_mass(O2),8),
@@ -358,8 +353,9 @@ class Run:
 
             if (i % 1000 == 0): 
                 print("\tCurrent Timestep:",i)
-                   
-        print(40*"-","\nCalculation Complete!")
+
+        end_time = time.time()    
+        print(40*"-","\nCalculation Complete!", "\nTotal run time = ", round(end_time - start_time,2), "s")
 
         if VERBOSE: 
             print("=========================================================================================")

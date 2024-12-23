@@ -27,6 +27,7 @@ class Nozzle:
         self.v_eff = None                           # effective Nozzle velocity
         self.M_throat = None
         self.x_shock = None
+        self.A_star_temp = None
 
     def set_gamma(self, gamma:float):
         self.gamma = gamma
@@ -82,25 +83,24 @@ class Nozzle:
         if (P_0 > self.P_b):
             # Assuming subsonic flow, calculate exit Mach number 
             M_exit = np.sqrt(2/(self.gamma-1) * ((self.P_b/P_0) ** (-(self.gamma-1)/self.gamma) - 1))
-
-            # Find the area required to choak this flow, A*
+            if M_exit > 1: M_exit = 1
             A_star = self.A_exit / self.A_over_Astar(M_exit)
-            # Find the mach number at the throat based on the area ratio A_throat/A*
-            M_throat = self.mach_number_solver(self.A_throat/A_star, supersonic=False)
+
+            self.A_star_temp = A_star
+
+            if A_star >= self.A_throat:
+                self.choked = True
+                M_throat = 1
+                M_exit = self.mach_number_solver(self.A_exit/self.A_throat, supersonic=True)
+            else: 
+                self.choked = False 
+                M_throat = self.mach_number_solver(self.A_throat/A_star, supersonic=False)
+            
+            self.M_throat = M_throat
 
             P_throat = P_0 * self.P_over_P0(M_throat)
             T_throat = T_0 * self.T_over_T0(M_throat)
             self.flowrate = P_throat * np.sqrt(self.gamma/(self.R * T_throat)) * M_throat * self.A_throat
-
-            if (abs(M_throat - 1) < 1e-6):
-                M_throat = 1
-                self.choked = True
-                # Assuming fully expanded flow, the exit Mach number, M_exit is a function of A_e / A_t
-                M_exit = self.mach_number_solver(self.A_exit/self.A_throat, supersonic=True)
-            else:
-                self.choked = False
-                
-            self.M_throat = M_throat
             
             # Exit pressure and temperature and speed of sound are a function of M_exit
             P_exit = P_0 * self.P_over_P0(M_exit)

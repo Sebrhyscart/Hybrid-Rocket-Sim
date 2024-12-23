@@ -134,6 +134,7 @@ class Nozzle:
             self.v_eff = M_exit * speed_of_sound_exit
         
         else:
+            print("Warning: Low chamber pressure!")
             self.flowrate = 0
             self.P_exit = P_0
             self.T_exit = T_0

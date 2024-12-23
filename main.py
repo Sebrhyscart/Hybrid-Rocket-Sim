@@ -67,7 +67,7 @@ def main():
     combustion_chamber_fuel_length = 0.2
     combustion_chamber_post_fuel_length = 0.05
     nozzle_throat_radius = 0.01
-    nozzle_exit_radius = 0.016
+    nozzle_exit_radius = 0.014
     diverging_section_nozzle_length = 0.04
     m_oxidizer = 20
     m_dot_injector = 0.2
@@ -83,6 +83,6 @@ def main():
     # ============================================================================================================
 
     aRun = Run(aChemicalSet, aChemicalReactionSet, aTank, aInjector, aCombustionChamber, aNozzle)
-    aRun.run(PLOT=True, VERBOSE=False, dt=1e-6, endtime=1e-3, output_name="short")
+    aRun.run(PLOT=False, VERBOSE=False, timestep=1e-4, endtime=1, output_name="short")
 
 main()

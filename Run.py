@@ -29,7 +29,7 @@ class Run:
         self.aCombustionChamber = aCombustionChamber
         self.aNozzle = aNozzle
 
-    def run(self, dt:float=1e-4, endtime:float=100, output_name:str=None, VERBOSE=False, PLOT=False, REGRESSION_MODEL = 'simple', THRUST_ISP=False, CF_CSTAR=False):
+    def run(self, timestep:float=1e-4, endtime:float=100, output_name:str=None, VERBOSE=False, PLOT=False, REGRESSION_MODEL = 'simple', THRUST_ISP=False, CF_CSTAR=False):
         '''
         This method is the main time-stepping loop to run the code. Time dependance is solved using a Backwards-Euler time integration scheme.
 
@@ -44,14 +44,14 @@ class Run:
             CF_CSTAR: (optional) calcualte the thrust coefficient and characteristic velocity of the engine. Default: False.
         '''
 
-        print("Run Mode:\nREGRESSION_MODEL =", REGRESSION_MODEL, "\nVERBOSE =", VERBOSE, "\nPLOT =", PLOT, "\nTHRUST_ISP =", THRUST_ISP, "\nCF_CSTAR =", CF_CSTAR)
+        print(40*"-","\nRun Mode:\nREGRESSION_MODEL =", REGRESSION_MODEL, "\nVERBOSE =", VERBOSE, "\nPLOT =", PLOT, "\nTHRUST_ISP =", THRUST_ISP, "\nCF_CSTAR =", CF_CSTAR, "\n"+40*"-")
         if VERBOSE:
             new_file(output_name)
             print_file(output_name,header)
             print_file(output_name,"Run Mode:\nVERBOSE =", VERBOSE, "\nTHRUST_ISP =", THRUST_ISP, "\nCF_CSTAR =", CF_CSTAR)
-
+        
+        new_data(output_name)
         if VERBOSE or PLOT:
-            new_data(output_name)
             print_data(output_name,"combustion_chamber_outer_wall_radius =",self.aCombustionChamber.r_wall)
             print_data(output_name,"combustion_chamber_port_radius =",self.aCombustionChamber.r_port)
             print_data(output_name,"combustion_chamber_pre_fuel_length =",self.aCombustionChamber.l_pre)
@@ -112,6 +112,7 @@ class Run:
         self.aNozzle.set_back_pressure(P)
         m_dot_out = 0
 
+        dt = timestep
         t = 0
         i = 0
 
@@ -161,6 +162,10 @@ class Run:
 
         while((self.aCombustionChamber.r_port < self.aCombustionChamber.r_wall) and (self.aTank.m_oxidizer > 0) and t < endtime): # While we're not out of fuel or oxidizer ...
             
+            # start with very small timesteps
+            if (i < 100 and timestep > 1e-6): dt=1e-6
+            else: dt = timestep
+
             # Indexing update
             i += 1
             t += dt
@@ -349,8 +354,13 @@ class Run:
                     else:
                         print_data(output_name,round(t,8),round(P,2),round(T,2),round(m_dot_out,5),round(thrust,2),round(Isp,2))
                 else:
-                    print_data(output_name,round(t,8),round(P,2),round(T,2),round(m_dot_out,5))       
-    
+                    print_data(output_name,round(t,8),round(P,2),round(T,2),round(m_dot_out,5))
+
+            if (i % 1000 == 0): 
+                print("\tCurrent Timestep:",i)
+                   
+        print(40*"-","\nCalculation Complete!")
+
         if VERBOSE: 
             print("=========================================================================================")
             print("Done!")

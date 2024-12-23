@@ -120,10 +120,13 @@ class Nozzle:
                 # exit mach number based on new stagnation pressure
                 M_exit = np.sqrt(2/(self.gamma-1) * ((self.P_b/P_02) ** (-(self.gamma-1)/self.gamma) - 1))
                 # Pressure at exit of nozzle based on loss of stagnation pressure over shock then isentopic contraction
-                P_02 * self.P_over_P0(M_exit)
+                P_exit = P_02 * self.P_over_P0(M_exit)
                 # No loss in stagnation temperature over a shock
                 T_exit = T_0 * self.T_over_T0(M_exit)
                 speed_of_sound_exit = np.sqrt(self.gamma * self.R * T_exit)
+            
+            else: x_shock = 0
+            self.x_shock = x_shock
 
             self.P_exit = P_exit
             self.T_exit = T_exit

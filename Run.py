@@ -29,12 +29,12 @@ class Run:
         self.aCombustionChamber = aCombustionChamber
         self.aNozzle = aNozzle
 
-    def run(self, dt:float=1e-3, endtime:float=100, output_name:str=None, VERBOSE=False, PLOT=False, REGRESSION_MODEL = 'simple', THRUST_ISP=False, CF_CSTAR=False):
+    def run(self, dt:float=1e-4, endtime:float=100, output_name:str=None, VERBOSE=False, PLOT=False, REGRESSION_MODEL = 'simple', THRUST_ISP=False, CF_CSTAR=False):
         '''
         This method is the main time-stepping loop to run the code. Time dependance is solved using a Backwards-Euler time integration scheme.
 
         Parameters:
-            dt: (optional) time step size. Default: 1e-3 s.
+            dt: (optional) time step size. Default: 1e-4 s.
             endtime: (optional) endtime of the simulation. Default: 100 s.
             output_name: (optional) the name of the output files. Default: a name will be chosen for you.
             VERBOSE: (optional) run with verbose outputs. Default: False.
@@ -76,7 +76,9 @@ class Run:
                        "gamma",
                        "R(J/kg/K)",
                        "O/F",
-                       "M_exit", 
+                       "M_exit",
+                       "P_exit",
+                       "x_shock(m)", 
                        "m_O2(kg)",
                        "m_fuelvapor(kg)",
                        "m_N2(kg)",
@@ -137,6 +139,8 @@ class Run:
                        round(self.aChemicalSet.get_ave_gamma(),4),
                        round(self.aChemicalSet.get_ave_R(),4),
                        0,
+                       0,
+                       P,
                        0,
                        round(self.aChemicalSet.get_chemical_mass(O2),8),
                        round(self.aChemicalSet.get_chemical_mass(paraffin),8),
@@ -329,6 +333,8 @@ class Run:
                            round(self.aNozzle.R,4),
                            round(m_dot_N2O_injector/m_dot_paraffin_grain,4),
                            round(self.aNozzle.M_exit,4),
+                           round(self.aNozzle.P_exit,8),
+                           round(self.aNozzle.x_shock,8),
                            round(self.aChemicalSet.get_chemical_mass(O2),8),
                            round(self.aChemicalSet.get_chemical_mass(paraffin),8),
                            round(self.aChemicalSet.get_chemical_mass(N2),8),

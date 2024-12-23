@@ -67,7 +67,7 @@ def main():
     combustion_chamber_fuel_length = 0.2
     combustion_chamber_post_fuel_length = 0.05
     nozzle_throat_radius = 0.01
-    nozzle_exit_radius = 0.02
+    nozzle_exit_radius = 0.016
     diverging_section_nozzle_length = 0.04
     m_oxidizer = 20
     m_dot_injector = 0.2
@@ -83,26 +83,6 @@ def main():
     # ============================================================================================================
 
     aRun = Run(aChemicalSet, aChemicalReactionSet, aTank, aInjector, aCombustionChamber, aNozzle)
-    aRun.run(PLOT=True, VERBOSE=False, dt=1e-3, endtime=0.1, output_name="short")
-
-    # P_list = np.linspace(101325.01,6*101325,1000)
-    # T_0 = 3000
-    # aNozzle.set_back_pressure(101325)
-    # aNozzle.set_gamma(1.4)
-    # aNozzle.set_R(270)
-
-    # m_dot = []
-    # param = []
-    # for P_0 in P_list:
-    #     aNozzle.calc_flowrate(P_0,T_0)
-    #     m_dot.append(aNozzle.flowrate)
-    #     # if aNozzle.M_exit > 1:
-    #     #     param.append(aNozzle.P_exit*aNozzle.P2_over_P1_shock(aNozzle.M_exit))
-    #     # else:
-    #     #     param.append(aNozzle.P_exit)
-    #     param.append(aNozzle.x_shock)
-
-    # plt.plot(P_list,m_dot)
-    # plt.show()
+    aRun.run(PLOT=True, VERBOSE=False, dt=1e-6, endtime=1e-3, output_name="short")
 
 main()

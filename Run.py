@@ -30,23 +30,93 @@ class Run:
         self.aCombustionChamber = aCombustionChamber
         self.aNozzle = aNozzle
 
-    def run(self, timestep:float=1e-4, endtime:float=100, output_name:str=None, VERBOSE=False, PLOT=False, REGRESSION_MODEL = 'simple', THRUST_ISP=False, CF_CSTAR=False):
+    def run(self, REGRESSION_MODEL='simple', 
+            INJECTOR_MODEL='complex', 
+            timestep:float=1e-4, 
+            endtime:float=100, 
+            output_name:str=None, 
+            VERBOSE=False, 
+            PLOT=False, 
+            THRUST_ISP=False, 
+            CF_CSTAR=False):
         '''
         This method is the main time-stepping loop to run the code. Time dependance is solved using a Backwards-Euler time integration scheme.
 
         Parameters:
-            dt: (optional) time step size. Default: 1e-4 s.
+            timestep: (optional) time step size. Default: 1e-4 s.
             endtime: (optional) endtime of the simulation. Default: 100 s.
             output_name: (optional) the name of the output files. Default: a name will be chosen for you.
             VERBOSE: (optional) run with verbose outputs. Default: False.
             PLOT: (optional) plot time-dependent results. Default: False.
             REGRESSION_MODEL: (optional) choice of model for fuel regression rate.  Options: simple. Default: simple.
+            INJECTOR_MODEL: (optional) choice of model for oxidizer injector. Options: simple, complex. Default: complex.
             THRUST_ISP: (optional) calculate the thrust and Isp of the engine. Default: False.
             CF_CSTAR: (optional) calcualte the thrust coefficient and characteristic velocity of the engine. Default: False.
         '''
-        start_time = time.time()
+        # ============================================================================================================
+        #  Setup
+        # ============================================================================================================
 
-        print(40*"-","\nRun Mode:\nREGRESSION_MODEL =", REGRESSION_MODEL, "\nVERBOSE =", VERBOSE, "\nPLOT =", PLOT, "\nTHRUST_ISP =", THRUST_ISP, "\nCF_CSTAR =", CF_CSTAR, "\n"+40*"-")
+        # Code timing statistics
+        start_time = time.time()
+        
+        # Extract Chemical data
+        N2O = self.aChemicalSet.species["N2O"]
+        N2 = self.aChemicalSet.species["N2"]
+        O2 = self.aChemicalSet.species["O2"]
+        paraffin = self.aChemicalSet.species["paraffin"]
+        H2O = self.aChemicalSet.species["H2O"]
+        CO2 = self.aChemicalSet.species["CO2"]
+        decomposition = self.aChemicalReactionSet.reactions["decomposition"]
+        vaporization = self.aChemicalReactionSet.reactions["vaporization"]
+        combustion = self.aChemicalReactionSet.reactions["combustion"]
+
+        # Initial Conditions
+        # initial temperature
+        T = 300 # [k]
+        # initial pressure
+        P = 101325 # [Pa]
+        # initial engine volume
+        V = self.aCombustionChamber.get_volume() # [m^3]
+        # set the intial masses of N2 and O2 in the engine
+        self.aChemicalSet.set_atmospheric_conditions(P,T,V) 
+        # pressure outside of the nozzle (atmospheric)
+        self.aNozzle.set_back_pressure(P)
+        # initial flowrate
+        m_dot_out = 0
+
+        # timestep size
+        dt = timestep
+        # time = 0
+        t = 0
+        # initial timestep index starts at 0
+        i = 0
+
+        # list of temperatures at each timestep
+        T_list = [T]
+        # timestep i-1 chemical set -> what chemicals in engine during last timestep?
+        im1ChemicalSet = self.aChemicalSet.copy()
+
+        if (INJECTOR_MODEL=='complex'):
+            import CoolProp.CoolProp as CP
+            NOX = "NitrousOxide"   
+
+            T_tank = T
+            rho_tank = self.aTank.m_oxidizer / self.aTank.volume
+            h_tank = CP.PropsSI("H", "T", T_tank, "D", rho_tank, NOX)
+            P_tank = CP.PropsSI("P", "T", T_tank, "D", rho_tank, NOX)
+
+        # ============================================================================================================
+        #  Printouts
+        # ============================================================================================================
+
+        print(40*"-","\nRun Mode:\nREGRESSION_MODEL =", REGRESSION_MODEL, 
+              "\nINJECTOR_MODEL =", INJECTOR_MODEL,
+              "\nVERBOSE =", VERBOSE, 
+              "\nPLOT =", PLOT, 
+              "\nTHRUST_ISP =", THRUST_ISP, 
+              "\nCF_CSTAR =", CF_CSTAR, "\n"+40*"-")
+        
         if VERBOSE:
             new_file(output_name)
             print_file(output_name,header)
@@ -86,7 +156,12 @@ class Run:
                        "m_fuelvapor(kg)",
                        "m_N2(kg)",
                        "m_H2O(kg)",
-                       "m_CO2(kg)")
+                       "m_CO2(kg)",
+                       "P_tank(Pa)",
+                       "T_tank(k)",
+                       "x_tank",
+                       "x_injector_2",
+                       "T_injector_2")
         else:
             if (THRUST_ISP == True):
                 if (CF_CSTAR == True):
@@ -96,29 +171,6 @@ class Run:
             else:
                 print_data(output_name,"t(s)","P(Pa)","T(k)","mdot(kg/s)")
 
-        # Extract Chemical data
-        N2O = self.aChemicalSet.species["N2O"]
-        N2 = self.aChemicalSet.species["N2"]
-        O2 = self.aChemicalSet.species["O2"]
-        paraffin = self.aChemicalSet.species["paraffin"]
-        H2O = self.aChemicalSet.species["H2O"]
-        CO2 = self.aChemicalSet.species["CO2"]
-        decomposition = self.aChemicalReactionSet.reactions["decomposition"]
-        vaporization = self.aChemicalReactionSet.reactions["vaporization"]
-        combustion = self.aChemicalReactionSet.reactions["combustion"]
-
-        # Initial Conditions
-        T = 300 # [k] initial temperature
-        P = 101325 # [Pa] initial pressure
-        V = self.aCombustionChamber.get_volume() # [m^3] initial engine volume
-        self.aChemicalSet.set_atmospheric_conditions(P,T,V) # set the intial masses of N2 and O2 in the engine
-        self.aNozzle.set_back_pressure(P)
-        m_dot_out = 0
-
-        dt = timestep
-        t = 0
-        i = 0
-
         if VERBOSE: 
             print("-----------------------------------------------------------------------------------------")
             print("timestep i =", round(i,6), "time = ", round(t,8), "[s]")
@@ -127,9 +179,9 @@ class Run:
 
         if VERBOSE or PLOT:
             print_data(output_name,
-                       round(t,8),
-                       round(P,4),
-                       round(T,4),
+                       t,
+                       P,
+                       T,
                        0,
                        0,
                        0,
@@ -139,19 +191,24 @@ class Run:
                        0,
                        0,
                        self.aCombustionChamber.r_port,
-                       round(V,8),
-                       round(self.aChemicalSet.get_ave_gamma(),4),
-                       round(self.aChemicalSet.get_ave_R(),4),
+                       V,
+                       self.aChemicalSet.get_ave_gamma(),
+                       self.aChemicalSet.get_ave_R(),
                        0,
                        0,
                        0,
                        P,
                        0,
-                       round(self.aChemicalSet.get_chemical_mass(O2),8),
-                       round(self.aChemicalSet.get_chemical_mass(paraffin),8),
-                       round(self.aChemicalSet.get_chemical_mass(N2),8),
-                       round(self.aChemicalSet.get_chemical_mass(H2O),8),
-                       round(self.aChemicalSet.get_chemical_mass(CO2),8))
+                       self.aChemicalSet.get_chemical_mass(O2),
+                       self.aChemicalSet.get_chemical_mass(paraffin),
+                       self.aChemicalSet.get_chemical_mass(N2),
+                       self.aChemicalSet.get_chemical_mass(H2O),
+                       self.aChemicalSet.get_chemical_mass(CO2),
+                       P,
+                       T,
+                       self.aTank.x_tank,
+                       0,
+                       T)
         else:
             if (THRUST_ISP == True):
                 if (CF_CSTAR == True):
@@ -161,10 +218,11 @@ class Run:
             else:
                 print_data(output_name,round(t,8),round(P,2),round(T,2),0)       
 
-        T_list = [T]
-        im1ChemicalSet = self.aChemicalSet.copy()
+        # ============================================================================================================
+        #  Time Integration Loop
+        # ============================================================================================================
 
-        while((self.aCombustionChamber.r_port < self.aCombustionChamber.r_wall) and (self.aTank.m_oxidizer > 0) and t < endtime): # While we're not out of fuel or oxidizer ...
+        while(t < endtime):
             
             # start with very small timesteps
             if (i < 100 and timestep > 1e-6): dt=1e-6
@@ -174,20 +232,60 @@ class Run:
             i += 1
             t += dt
 
-            if VERBOSE: 
-                print("-----------------------------------------------------------------------------------------")
-                print("timestep i =", round(i,8), "time = ", round(t,8), "[s]\n")
-                print("NOX Decomposition Reaction:")
-                print("\tm_dot N2O into engine =",round(self.aInjector.flowrate,3),"[kg/s]")
-                print_file(output_name,"-----------------------------------------------------------------------------------------")
-                print_file(output_name,"timestep i =", round(i,8), "time = ", round(t,8), "[s]\n")
-                print_file(output_name,"NOX Decomposition Reaction:")
-                print_file(output_name,"\tm_dot N2O into engine =",round(self.aInjector.flowrate,3),"[kg/s]")
+            if (INJECTOR_MODEL=='complex'):
 
-            # get oxidizer flow rate from the injector
-            m_dot_N2O_injector = self.aInjector.flowrate
-            # remove some oxidizer from the tank
-            self.aTank.set_m_oxidizer(self.aTank.m_oxidizer - m_dot_N2O_injector*dt)
+                # Upstream Injector Properties
+                P_injector_1 = P_tank # Assume: Pressure = tank pressure
+                x_injector_1 = 0      # Assume: Quality = staturated liquid (x = 0)
+                rho_injector_1 = CP.PropsSI("D", "P", P_injector_1, "Q", x_injector_1, NOX) # Density = rho_sat at P
+                s_injector_1 = CP.PropsSI("S", "P", P_injector_1, "Q", x_injector_1, NOX)   # Entropy = s_sat at P               
+                h_injector_1 = CP.PropsSI("H", "P", P_injector_1, "Q", x_injector_1, NOX)   # Enthalpy = h_sat at P
+                
+                # Downstream Injector Properties
+                P_injector_2 = P            # Assume: Injector back pressure is the chamber pressure
+                s_injector_2 = s_injector_1 # Assume Isentropic flow through injector
+                rho_injector_2 = CP.PropsSI("D", "P", P_injector_2, "S", s_injector_2, NOX) # Density = rho at P and s
+                x_injector_2 = CP.PropsSI("Q", "P", P_injector_2, "S", s_injector_2, NOX)   # Quality = x at P and s
+                h_injector_2 = CP.PropsSI("H", "P", P_injector_2, "S", s_injector_2, NOX)   # Enthalpy = h at P and s
+                T_injector_2 = CP.PropsSI("T", "P", P_injector_2, "S", s_injector_2, NOX)   # Temperature = T at P and s
+
+                if (P_injector_1 < P_injector_2) or (h_injector_1 < h_injector_2): 
+                    self.aInjector.flowrate = 0
+                else:
+                    # Mass flow rate through injector
+                    # mass flow rate assuming incompressible flow
+                    #     Derivation: mass flow rate equation + dynamic pressure equation + incompressible assumption
+                    m_dot_SPI = self.aInjector.Cd * self.aInjector.N_orifice * self.aInjector.A_orifice * np.sqrt(2 * rho_injector_1 * (P_injector_1 - P_injector_2))
+                    # mass flow rate assuming homogeneous equilibrium 2-phase flow
+                    #     Derivation: mass flow rate equation + first law of thermodynamics + homogeneous 2-phase mixture assumption
+                    m_dot_HEM = self.aInjector.Cd * self.aInjector.N_orifice * self.aInjector.A_orifice * rho_injector_2 * np.sqrt(2 * (h_injector_1 - h_injector_2))
+                    # non-equilibrium correction factor
+                    kappa = 1 # see Dyer et al.
+                    # set the flowrate based on Dyer model
+                    self.aInjector.flowrate = (kappa / (kappa + 1)) * m_dot_SPI + (1 / (kappa + 1)) * m_dot_HEM
+
+                # NOX change in tank
+                # conservation of NOX mass:
+                rho_tank_new = rho_tank - (self.aInjector.flowrate / self.aTank.volume) * dt
+                # coservation of NOX energy:
+                h_tank_new = (rho_tank * h_tank - (self.aInjector.flowrate / self.aTank.volume) * h_tank * dt) / rho_tank_new
+                # update tank density and enthalpy
+                rho_tank = rho_tank_new
+                h_tank = h_tank_new
+
+                P_tank = CP.PropsSI("P", "D", rho_tank, "H", h_tank, NOX)
+                T_tank = CP.PropsSI("T", "D", rho_tank, "H", h_tank, NOX)
+                self.aTank.x_tank = CP.PropsSI("Q", "D", rho_tank, "H", h_tank, NOX)
+
+                m_dot_N2O_injector = self.aInjector.flowrate
+                self.aTank.set_m_oxidizer(rho_tank*self.aTank.volume)
+            else:
+                # get oxidizer flow rate from the injector
+                if (self.aInjector.flowrate == None): raise InjectorError("In simple Injector mode, the flowrate must be provided!")
+                m_dot_N2O_injector = self.aInjector.flowrate
+                # remove some oxidizer from the tank
+                self.aTank.set_m_oxidizer(self.aTank.m_oxidizer - m_dot_N2O_injector*dt)
+
             # set flowrate entering the combustion chamber this timestep
             self.aChemicalSet.set_chemical_massflow(N2O,m_dot_N2O_injector)
             # N2O -> N2 + 1/2 O2
@@ -195,18 +293,13 @@ class Run:
             m_dot_N2O = m_dot_N2O_[0]
             # add flowrates to chemical set
             self.aChemicalSet.set_multiple_chemical_massflow([N2O, N2, O2],[m_dot_N2O, m_dot_N2, m_dot_O2])
-            # Note: m_dot_N2O_injector is the NOX flowrate BEFORE decomposition, and m_dot_N2O is the NOX flowrate AFTER decomposition
-
-            if VERBOSE: 
-                print("\tm_dot N2 from decomp =", round(m_dot_N2,3), "[kg/s]")
-                print("\tm_dot O2 from decomp =", round(m_dot_O2,3), "[kg/s]")
-                print("\tQ_dot Power from decomp =", round(Q_dot_decomp,3), "[W]\n")
-                print_file(output_name,"\tm_dot N2 from decomp =", round(m_dot_N2,3), "[kg/s]")
-                print_file(output_name,"\tm_dot O2 from decomp =", round(m_dot_O2,3), "[kg/s]")
-                print_file(output_name,"\tQ_dot Power from decomp =", round(Q_dot_decomp,3), "[W]\n")
+            # ***Note: m_dot_N2O_injector is the NOX flowrate BEFORE decomposition, and m_dot_N2O is the NOX flowrate AFTER decomposition
 
             # regression rate
-            r_dot = self.aCombustionChamber.simple_regression_rate(m_dot_N2O_injector / (np.pi * self.aCombustionChamber.r_port**2))
+            if (self.aCombustionChamber.r_port < self.aCombustionChamber.r_wall):
+                r_dot = self.aCombustionChamber.simple_regression_rate(m_dot_N2O_injector / (np.pi * self.aCombustionChamber.r_port**2))
+            else:
+                r_dot = 0
             # flow rate of paraffin liquid + vapor from regression
             m_dot_paraffin_grain = paraffin.get_solid_density() * r_dot * 2 * np.pi * self.aCombustionChamber.r_port * self.aCombustionChamber.l_fuel
             # add flowrate to chemical set
@@ -218,39 +311,11 @@ class Run:
             # calculate the new chamber volume
             V = self.aCombustionChamber.get_volume()
 
-            if VERBOSE: 
-                print("Fuel Grain Regression:")
-                print("\tRegression rate =", round(r_dot*1000,2), "[mm/s]")
-                print("\tm_dot paraffin from regression =", round(m_dot_paraffin_grain,3), "[kg/s]")
-                print("\tNew port radius after regression =", round(self.aCombustionChamber.r_port,10), "[m]")
-                print("\tNew Chamber Volume after regression =", round(V,6), "[m^3]")
-                print("\tQ_dot Power from vaporization =", round(Q_dot_vap,3), "[W]\n")
-                print_file(output_name,"Fuel Grain Regression:")
-                print_file(output_name,"\tRegression rate =", round(r_dot*1000,2), "[mm/s]")
-                print_file(output_name,"\tm_dot paraffin from regression =", round(m_dot_paraffin_grain,3), "[kg/s]")
-                print_file(output_name,"\tNew port radius after regression =", round(self.aCombustionChamber.r_port,10), "[m]")
-                print_file(output_name,"\tNew Chamber Volume after regression =", round(V,6), "[m^3]")
-                print_file(output_name,"\tQ_dot Power from vaporization =", round(Q_dot_vap,3), "[W]\n")
-
             # C32H66 + 97/2 O2 -> 33 H2O + 32 CO2
             (m_dot_paraffin, m_dot_O2), (m_dot_H2O, m_dot_CO2), Q_dot_comb = combustion.complete_reaction([m_dot_paraffin_grain, m_dot_O2])
             # add flowrates of reaction products to chemical set
             self.aChemicalSet.set_multiple_chemical_massflow([paraffin, O2, H2O, CO2],[m_dot_paraffin, m_dot_O2, m_dot_H2O, m_dot_CO2])
-            # Note: m_dot_paraffin_grain is the flowrate of paraffin from the fuel grain, and m_dot_paraffin is the flowrate of paraffin after combustion
-
-            if VERBOSE: 
-                print("Combustion Reaction:")
-                print("\tQ_dot Power from combustion =", round(Q_dot_comb,3), "[W]")
-                print("\tm_dot O2 surviving combustion =", round(m_dot_O2,3), "[kg/s]")
-                print("\tm_dot paraffin surviving combustion =", round(m_dot_paraffin,3), "[kg/s]")
-                print("\tm_dot H2O from combustion =", round(m_dot_H2O,3), "[kg/s]")
-                print("\tm_dot CO2 from combustion =", round(m_dot_CO2,3), "[kg/s]\n")
-                print_file(output_name,"Combustion Reaction:")
-                print_file(output_name,"\tQ_dot Power from combustion =", round(Q_dot_comb,3), "[W]")
-                print_file(output_name,"\tm_dot O2 surviving combustion =", round(m_dot_O2,3), "[kg/s]")
-                print_file(output_name,"\tm_dot paraffin surviving combustion =", round(m_dot_paraffin,3), "[kg/s]")
-                print_file(output_name,"\tm_dot H2O from combustion =", round(m_dot_H2O,3), "[kg/s]")
-                print_file(output_name,"\tm_dot CO2 from combustion =", round(m_dot_CO2,3), "[kg/s]\n")
+            # ***Note: m_dot_paraffin_grain is the flowrate of paraffin from the fuel grain, and m_dot_paraffin is the flowrate of paraffin after combustion
 
             # total mass of all chemical species
             m_total = self.aChemicalSet.get_total_mass()
@@ -263,18 +328,6 @@ class Run:
             # set the gamma and R on the exaust in the nozzle
             self.aNozzle.set_gamma(gamma_ave)
             self.aNozzle.set_R(R_ave)
-
-            if VERBOSE: 
-                print("Total Chemical Species Info:")
-                print("\tTotal mass of species in engine =", round(m_total,3), "[kg]")
-                print("\tAverage R =", round(R_ave,3), "[J/kg/K]")
-                print("\tAverage cp =", round(cp_ave,3), "[J/kg/K]")
-                print("\tAverage gamma =", round(gamma_ave,3), "\n")
-                print_file(output_name,"Total Chemical Species Info:")
-                print_file(output_name,"\tTotal mass of species in engine =", round(m_total,3), "[kg]")
-                print_file(output_name,"\tAverage R =", round(R_ave,3), "[J/kg/K]")
-                print_file(output_name,"\tAverage cp =", round(cp_ave,3), "[J/kg/K]")
-                print_file(output_name,"\tAverage gamma =", round(gamma_ave,3), "\n")
 
             # Solve for new temperature using previous temperature and conservation of energy
             T = (T_list[i-1] + (Q_dot_decomp + Q_dot_vap + Q_dot_comb)*dt / (cp_ave*m_total)) / (1 + m_dot_out*dt / m_total)
@@ -300,6 +353,59 @@ class Run:
             T_list.append(T)
 
             if VERBOSE: 
+                print("-----------------------------------------------------------------------------------------")
+                print("timestep i =", round(i,8), "time = ", round(t,8), "[s]\n")
+                print("NOX Decomposition Reaction:")
+                print("\tm_dot N2O into engine =",round(self.aInjector.flowrate,3),"[kg/s]")
+                print_file(output_name,"-----------------------------------------------------------------------------------------")
+                print_file(output_name,"timestep i =", round(i,8), "time = ", round(t,8), "[s]\n")
+                print_file(output_name,"NOX Decomposition Reaction:")
+                print_file(output_name,"\tm_dot N2O into engine =",round(self.aInjector.flowrate,3),"[kg/s]")
+
+                print("\tm_dot N2 from decomp =", round(m_dot_N2,3), "[kg/s]")
+                print("\tm_dot O2 from decomp =", round(m_dot_O2,3), "[kg/s]")
+                print("\tQ_dot Power from decomp =", round(Q_dot_decomp,3), "[W]\n")
+                print_file(output_name,"\tm_dot N2 from decomp =", round(m_dot_N2,3), "[kg/s]")
+                print_file(output_name,"\tm_dot O2 from decomp =", round(m_dot_O2,3), "[kg/s]")
+                print_file(output_name,"\tQ_dot Power from decomp =", round(Q_dot_decomp,3), "[W]\n")
+
+                print("Fuel Grain Regression:")
+                print("\tRegression rate =", round(r_dot*1000,2), "[mm/s]")
+                print("\tm_dot paraffin from regression =", round(m_dot_paraffin_grain,3), "[kg/s]")
+                print("\tNew port radius after regression =", round(self.aCombustionChamber.r_port,10), "[m]")
+                print("\tNew Chamber Volume after regression =", round(V,6), "[m^3]")
+                print("\tQ_dot Power from vaporization =", round(Q_dot_vap,3), "[W]\n")
+                print_file(output_name,"Fuel Grain Regression:")
+                print_file(output_name,"\tRegression rate =", round(r_dot*1000,2), "[mm/s]")
+                print_file(output_name,"\tm_dot paraffin from regression =", round(m_dot_paraffin_grain,3), "[kg/s]")
+                print_file(output_name,"\tNew port radius after regression =", round(self.aCombustionChamber.r_port,10), "[m]")
+                print_file(output_name,"\tNew Chamber Volume after regression =", round(V,6), "[m^3]")
+                print_file(output_name,"\tQ_dot Power from vaporization =", round(Q_dot_vap,3), "[W]\n")
+
+                print("Combustion Reaction:")
+                print("\tQ_dot Power from combustion =", round(Q_dot_comb,3), "[W]")
+                print("\tm_dot O2 surviving combustion =", round(m_dot_O2,3), "[kg/s]")
+                print("\tm_dot paraffin surviving combustion =", round(m_dot_paraffin,3), "[kg/s]")
+                print("\tm_dot H2O from combustion =", round(m_dot_H2O,3), "[kg/s]")
+                print("\tm_dot CO2 from combustion =", round(m_dot_CO2,3), "[kg/s]\n")
+                print_file(output_name,"Combustion Reaction:")
+                print_file(output_name,"\tQ_dot Power from combustion =", round(Q_dot_comb,3), "[W]")
+                print_file(output_name,"\tm_dot O2 surviving combustion =", round(m_dot_O2,3), "[kg/s]")
+                print_file(output_name,"\tm_dot paraffin surviving combustion =", round(m_dot_paraffin,3), "[kg/s]")
+                print_file(output_name,"\tm_dot H2O from combustion =", round(m_dot_H2O,3), "[kg/s]")
+                print_file(output_name,"\tm_dot CO2 from combustion =", round(m_dot_CO2,3), "[kg/s]\n")
+
+                print("Total Chemical Species Info:")
+                print("\tTotal mass of species in engine =", round(m_total,3), "[kg]")
+                print("\tAverage R =", round(R_ave,3), "[J/kg/K]")
+                print("\tAverage cp =", round(cp_ave,3), "[J/kg/K]")
+                print("\tAverage gamma =", round(gamma_ave,3), "\n")
+                print_file(output_name,"Total Chemical Species Info:")
+                print_file(output_name,"\tTotal mass of species in engine =", round(m_total,3), "[kg]")
+                print_file(output_name,"\tAverage R =", round(R_ave,3), "[J/kg/K]")
+                print_file(output_name,"\tAverage cp =", round(cp_ave,3), "[J/kg/K]")
+                print_file(output_name,"\tAverage gamma =", round(gamma_ave,3), "\n")
+
                 print("Conservation Law Balance:")
                 print("\tP =", round(P,1))
                 print("\tT =", round(T,1))
@@ -314,32 +420,38 @@ class Run:
             if VERBOSE or PLOT:
                 thrust, Isp = self.aNozzle.get_thrust_Isp()
                 c_f, c_star = self.aNozzle.get_thrust_coeff_characteristic_velocity()
+                if (m_dot_paraffin_grain == 0): m_dot_paraffin_grain = 1e-6
                 print_data(output_name,
-                           round(t,8),
-                           round(P,4),
-                           round(T,4),
-                           round(m_dot_out,8),
-                           round(thrust,8),
-                           round(Isp,4),
-                           round(c_f,8),
-                           round(c_star,4),
-                           round(self.aTank.m_oxidizer,8),
-                           round(m_dot_N2O_injector,8),
-                           round(r_dot,8),
-                           round(self.aCombustionChamber.r_port,8),
-                           round(V,8),
-                           round(self.aNozzle.gamma,4),
-                           round(self.aNozzle.R,4),
-                           round(m_dot_N2O_injector/m_dot_paraffin_grain,4),
-                           round(self.aNozzle.M_exit,4),
-                           round(self.aNozzle.M_throat,4),
-                           round(self.aNozzle.P_exit,8),
-                           round(self.aNozzle.x_shock,8),
-                           round(self.aChemicalSet.get_chemical_mass(O2),8),
-                           round(self.aChemicalSet.get_chemical_mass(paraffin),8),
-                           round(self.aChemicalSet.get_chemical_mass(N2),8),
-                           round(self.aChemicalSet.get_chemical_mass(H2O),8),
-                           round(self.aChemicalSet.get_chemical_mass(CO2),8))
+                           t,
+                           P,
+                           T,
+                           m_dot_out,
+                           thrust,
+                           Isp,
+                           c_f,
+                           c_star,
+                           self.aTank.m_oxidizer,
+                           m_dot_N2O_injector,
+                           r_dot,
+                           self.aCombustionChamber.r_port,
+                           V,
+                           self.aNozzle.gamma,
+                           self.aNozzle.R,
+                           m_dot_N2O_injector/m_dot_paraffin_grain,
+                           self.aNozzle.M_exit,
+                           self.aNozzle.M_throat,
+                           self.aNozzle.P_exit,
+                           self.aNozzle.x_shock,
+                           self.aChemicalSet.get_chemical_mass(O2),
+                           self.aChemicalSet.get_chemical_mass(paraffin),
+                           self.aChemicalSet.get_chemical_mass(N2),
+                           self.aChemicalSet.get_chemical_mass(H2O),
+                           self.aChemicalSet.get_chemical_mass(CO2),
+                           P_tank,
+                           T_tank,
+                           self.aTank.x_tank,
+                           x_injector_2,
+                           T_injector_2)
             else:
                 if (THRUST_ISP):
                     thrust, Isp = self.aNozzle.get_thrust_Isp()
@@ -355,7 +467,9 @@ class Run:
                 print("\tCurrent Timestep:",i)
 
         end_time = time.time()    
-        print(40*"-","\nCalculation Complete!", "\nTotal run time = ", round(end_time - start_time,2), "s")
+        print(40*"-","\nCalculation Complete!\nTotal Run transient:",round(t,3),"s", 
+              "\nTiming Statistics:\n\tTotal code run time =", round(end_time - start_time,2), "s",
+              "\n\tAverage timesteps per second =", round(i/(end_time - start_time),1))
 
         if VERBOSE: 
             print("=========================================================================================")
@@ -424,4 +538,38 @@ class Run:
         plt.tight_layout()
         plt.savefig(f'{directory}/species_mass_vs_time.png')
         plt.close()
+
+        flowrate = data[:, 9]
+        pressure = data[:, 1]
+        thrust = data[:, 4]
+        normalized_flowrate = flowrate / np.average(flowrate)
+        normalized_pressure = pressure / np.average(pressure)
+        normalized_thrust = thrust / np.average(thrust)
+
+        plt.figure(figsize=(10, 5))
+        plt.plot(time,normalized_flowrate,label=f'Flowrate / {round(np.average(flowrate),4)}')
+        plt.plot(time,normalized_pressure,label=f'Pressure / {round(np.average(pressure),2)}')
+        plt.plot(time,normalized_thrust,label=f'Thrust / {round(np.average(thrust),2)}')
+        plt.title(f'Normalized Flowrate, Pressure, and Thrust vs Time')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Normalized Parameter')
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(f'{directory}/Normalized_mdot_Press_Thrust_vs_time.png')
+        plt.close()
+
+        tank_pressure = data[:,25]
+
+        plt.figure(figsize=(10, 5))
+        plt.plot(time,pressure,label=f'Chamber Pressure')
+        plt.plot(time,tank_pressure,label=f'Tank Pressure')
+        plt.title(f'Chamber Pressure and Tank Pressure vs Time')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Pressure (Pa)')
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(f'{directory}/Pressure_and_tank_Pressure_vs_time.png')
+        plt.close()
+
+
         

@@ -27,7 +27,6 @@ class Nozzle:
         self.v_eff = None                           # effective Nozzle velocity
         self.M_throat = None
         self.x_shock = None
-        self.A_star_temp = None
 
     def set_gamma(self, gamma:float):
         self.gamma = gamma
@@ -134,12 +133,15 @@ class Nozzle:
             self.v_eff = M_exit * speed_of_sound_exit
         
         else:
-            print("Warning: Low chamber pressure!")
+            # print("Warning: Low chamber pressure!")
+            self.choked = False
             self.flowrate = 0
             self.P_exit = P_0
             self.T_exit = T_0
             self.M_exit = 0
+            self.M_throat = 0
             self.v_eff = 0
+            self.x_shock = 0
 
     def is_choked(self) -> bool:
         if(self.choked == None): raise InputError("Define the flowrate first!")
@@ -149,19 +151,19 @@ class Nozzle:
         '''
             Calculate the thrust and specific impulse (Isp) of the engine
         '''
+        if self.flowrate == 0: return 0,0
         thrust = self.flowrate * self.v_eff + (self.P_exit - self.P_b)*self.A_exit
-        c_F = thrust / (self.P_0 * self.A_throat)
-        c_star = np.sqrt(((self.R * self.T_0)/self.gamma)*((self.gamma+1)/2)**((self.gamma+1)/(self.gamma-1)))
-        Isp = (c_F * c_star)/9.81
+        Isp = thrust / self.flowrate / 9.81
         return thrust, Isp
     
     def get_thrust_coeff_characteristic_velocity(self) -> tuple[float, float]:
         '''
             Calculate the thrust coefficient, c_F and the characteristic velocity, c* of the engine
         '''
+        if self.flowrate == 0: return 0,0
         thrust = self.flowrate * self.v_eff + (self.P_exit - self.P_b)*self.A_exit
         c_F = thrust / (self.P_0 * self.A_throat)
-        c_star = np.sqrt(((self.R * self.T_0)/self.gamma)*((self.gamma+1)/2)**((self.gamma+1)/(self.gamma-1)))
+        c_star = (self.P_0 * self.A_throat) / self.flowrate
         return c_F, c_star
     
     def T_over_T0(self, M):
@@ -171,10 +173,10 @@ class Nozzle:
         return ((1 + (self.gamma-1)/2 * M**2))**(-(self.gamma)/(self.gamma-1))
         
     def T_over_Tstar(self, M):
-        return ((1 + (self.gamma-1)/2 * M**2) / (1 + (self.gamma-1)/2 * M**2))**(-1)
+        return ((1 + (self.gamma-1)/2 * M**2) / (1 + (self.gamma-1)/2))**(-1)
     
     def P_over_Pstar(self, M):
-        return ((1 + (self.gamma-1)/2 * M**2) / (1 + (self.gamma-1)/2 * M**2))**(-(self.gamma)/(self.gamma-1))
+        return ((1 + (self.gamma-1)/2 * M**2) / (1 + (self.gamma-1)/2))**(-(self.gamma)/(self.gamma-1))
         
     def A_over_Astar(self, M):
         return ((((self.gamma+1)/2)**(-(self.gamma+1)/(2*(self.gamma-1)))) * ((1 + ((self.gamma-1)/2) * M**2)**((self.gamma+1)/(2*(self.gamma-1)))) / M)

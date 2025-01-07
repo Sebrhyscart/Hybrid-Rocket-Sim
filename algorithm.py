@@ -25,3 +25,6 @@ def golden_search(f, a, b, tol=1e-8):
 
     root = (a + b) / 2
     return root
+
+def inches_to_meters(length_inches):
+    return 0.0254 * length_inches

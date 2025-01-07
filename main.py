@@ -61,29 +61,33 @@ def main():
     # ============================================================================================================
     # GEOMETRY
     # ============================================================================================================
-    combustion_chamber_outer_wall_radius = 0.06
-    combustion_chamber_port_radius = 0.02
+    combustion_chamber_outer_wall_radius = 0.0857/2
+    combustion_chamber_port_radius = 0.0303
     combustion_chamber_pre_fuel_length = 0.05
-    combustion_chamber_fuel_length = 0.2
+    combustion_chamber_fuel_length = 0.2446
     combustion_chamber_post_fuel_length = 0.05
-    nozzle_throat_radius = 0.01
-    nozzle_exit_radius = 0.014
-    diverging_section_nozzle_length = 0.04
-    m_oxidizer = 20
+    nozzle_throat_radius = inches_to_meters(0.843/2)
+    nozzle_exit_radius = inches_to_meters(1.83/2)
+    nozzle_diverging_section_length = inches_to_meters(2)
+    injector_hole_radius = 0.002
+    oxidizer_tank_radius = inches_to_meters(5/2 - 3/16)
+    oxidizer_tank_length = 0.353
+    m_oxidizer = 2.5
     m_dot_injector = 0.2
 
-    aTank = Tank(m_oxidizer)
-    aInjector = Injector(m_dot_injector)
+    aTank = Tank((np.pi*oxidizer_tank_length*oxidizer_tank_radius**2),m_oxidizer)
+    aInjector = Injector(1, (np.pi*injector_hole_radius**2))
+    aInjector.flowrate = m_dot_injector
     aCombustionChamber = CombustionChamber(combustion_chamber_outer_wall_radius, combustion_chamber_port_radius, combustion_chamber_fuel_length,
                                            combustion_chamber_pre_fuel_length, combustion_chamber_post_fuel_length)
-    aNozzle = Nozzle((np.pi*nozzle_throat_radius**2), (np.pi*nozzle_exit_radius**2), diverging_section_nozzle_length)
+    aNozzle = Nozzle((np.pi*nozzle_throat_radius**2), (np.pi*nozzle_exit_radius**2), nozzle_diverging_section_length)
 
     # ============================================================================================================
     # RUN
     # ============================================================================================================
 
-    # aRun = Run(aChemicalSet, aChemicalReactionSet, aTank, aInjector, aCombustionChamber, aNozzle)
-    # aRun.run(PLOT=True, VERBOSE=False, timestep=1e-4, endtime=4, output_name="short")
+    aRun = Run(aChemicalSet, aChemicalReactionSet, aTank, aInjector, aCombustionChamber, aNozzle)
+    aRun.run(PLOT=True, VERBOSE=False, timestep=1e-4, endtime=6, output_name="hybrid")
 
     # filename = "short"
     # # Read the header row (8th row, index 7) and data

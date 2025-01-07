@@ -642,18 +642,17 @@ class Run:
         plt.savefig(f'{directory}/Normalized_mdot_Press_Thrust_vs_time.png')
         plt.close()
 
-        tank_pressure = data[:,25]
-
-        plt.figure(figsize=(10, 5))
-        plt.plot(time,pressure,label=f'Chamber Pressure')
-        plt.plot(time,tank_pressure,label=f'Tank Pressure')
-        plt.title(f'Chamber Pressure and Tank Pressure vs Time')
-        plt.xlabel('Time (s)')
-        plt.ylabel('Pressure (Pa)')
-        plt.legend()
-        plt.tight_layout()
-        plt.savefig(f'{directory}/Pressure_and_tank_Pressure_vs_time.png')
-        plt.close()
+        # tank_pressure = data[:,25]
+        # plt.figure(figsize=(10, 5))
+        # plt.plot(time,pressure,label=f'Chamber Pressure')
+        # plt.plot(time,tank_pressure,label=f'Tank Pressure')
+        # plt.title(f'Chamber Pressure and Tank Pressure vs Time')
+        # plt.xlabel('Time (s)')
+        # plt.ylabel('Pressure (Pa)')
+        # plt.legend()
+        # plt.tight_layout()
+        # plt.savefig(f'{directory}/Pressure_and_tank_Pressure_vs_time.png')
+        # plt.close()
 
 
         

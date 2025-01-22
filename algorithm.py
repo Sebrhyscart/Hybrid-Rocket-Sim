@@ -1,5 +1,7 @@
 import numpy as np
 import warnings
+import CoolProp.CoolProp as CP
+NOX = "NitrousOxide" 
 
 np.seterr(invalid='raise')
 

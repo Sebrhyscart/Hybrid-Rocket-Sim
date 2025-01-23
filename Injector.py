@@ -20,6 +20,10 @@ class Injector:
     def calc_flowrate_spi(self, P_injector_1:float, P_injector_2:float) -> float:
         '''
         Calculate flowrate of injector assuming single phase incompressible fluid
+
+        Parameters:
+            P_injector_1: Pressure Upstream of Injector
+            P_injector_2: Pressure Downstream of Injector
         '''
         # Upstream Injector Properties
         x_injector_1 = 0 # Assume: Quality = staturated liquid (x = 0)
@@ -36,6 +40,10 @@ class Injector:
     def calc_flowrate_hem(self, P_injector_1:float, P_injector_2:float) -> float:
         '''
         Calculate flowrate of injector assuming homogenous equilibrium phase change for compressible fluid
+
+        Parameters:
+            P_injector_1: Pressure Upstream of Injector
+            P_injector_2: Pressure Downstream of Injector
         '''
         # Upstream Injector Properties
         x_injector_1 = 0 # Assume: Quality = staturated liquid (x = 0)
@@ -59,11 +67,16 @@ class Injector:
         '''
         Calculate flowrate of injector assuming homogenous non-equilibrium phase change for compressible fluid,
         proposed by Dyer et al.
+
+        Parameters:
+            P_injector_1: Pressure Upstream of Injector
+            P_injector_2: Pressure Downstream of Injector
+            P_super: supercharged pressure - how much greater is the pressure than P_sat
         '''
         m_dot_SPI = self.calc_flowrate_spi(P_injector_1, P_injector_2)
         m_dot_HEM = self.calc_flowrate_hem(P_injector_1, P_injector_2)
         # Non equilibrium factor
-        kappa = 1 # see Dyer et al.
+        kappa = 1 # Assume saturated liquid => kappa = 1
         # set the flowrate based on Dyer model
         m_dot_dyer = (kappa / (kappa + 1)) * m_dot_SPI + (1 / (kappa + 1)) * m_dot_HEM
         self.flowrate = m_dot_dyer

@@ -5,9 +5,9 @@ class Tank:
         self.pressure = None
 
     def linear_pressure_func(self, t):
-        P0 = 3.447e6
-        P1 = 2.413e6
-        dt = 6
+        P0 = 550 * 6894.76
+        P1 = 350 * 6894.76
+        dt = 8
         pressure = ((P1 - P0)/dt) * t + P0
         self.pressure = pressure
         return pressure

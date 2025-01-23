@@ -106,7 +106,7 @@ def main():
                                            combustion_chamber_pre_fuel_length, combustion_chamber_post_fuel_length)
     macNozzle = Nozzle((np.pi*nozzle_throat_radius**2), (np.pi*nozzle_exit_radius**2), nozzle_diverging_section_length)
 
-    combustion_chamber_outer_wall_radius = 0.0857/2
+    combustion_chamber_outer_wall_radius = 0.13/2
     combustion_chamber_port_radius = 0.0303
     combustion_chamber_pre_fuel_length = 0.05
     combustion_chamber_fuel_length = 0.2446
@@ -115,7 +115,7 @@ def main():
     nozzle_exit_radius = inches_to_meters(1.890/2)
     nozzle_diverging_section_length = inches_to_meters(2)
     injector_hole_radius = 0.001473
-    m_oxidizer = 2.5
+    m_oxidizer = 10
     m_dot_injector = 0.3
 
     waterlooTank = Tank(m_oxidizer)
@@ -123,7 +123,7 @@ def main():
     waterlooInjector.flowrate = m_dot_injector
     waterlooCombustionChamber = CombustionChamber(combustion_chamber_outer_wall_radius, combustion_chamber_port_radius, combustion_chamber_fuel_length,
                                            combustion_chamber_pre_fuel_length, combustion_chamber_post_fuel_length)
-    waterlooNozzle = Nozzle((np.pi*nozzle_throat_radius**2), (np.pi*nozzle_exit_radius**2), nozzle_diverging_section_length)
+    waterlooNozzle = Nozzle((np.pi*nozzle_throat_radius**2), 4.7*(np.pi*nozzle_throat_radius**2), nozzle_diverging_section_length)
 
     # ============================================================================================================
     # RUN
@@ -133,6 +133,31 @@ def main():
     #mcmasterRun.run(PLOT=True, timestep=1e-4, endtime=1e-5, output_name="test", INJECTOR_MODEL='complex')
 
     waterlooRun = Run(HTPBChemcialSet, HTPBChemicalReactionSet, waterlooTank, waterlooInjector, waterlooCombustionChamber, waterlooNozzle)
-    waterlooRun.run(PLOT=True, endtime=2, output_name="waterloo", REGRESSION_MODEL='HTPB', INJECTOR_MODEL='simple')
+    waterlooRun.run(PLOT=True, endtime=10, output_name="waterloo", REGRESSION_MODEL='HTPB20percentAl', INJECTOR_MODEL='dyer')
+
+    # Num = 100
+    # p1 = 568
+    # p2 = np.linspace(p1,p1-500, Num)
+    # D = 0.0015
+    # A = np.pi/4 * D**2
+    # testInjector = Injector(1,A)
+    # m_dot_dyer = np.zeros(Num)
+    # m_dot_spi = np.zeros(Num)
+    # m_dot_hem = np.zeros(Num)
+    # for i in range(len(p2)):
+    #     m_dot_dyer[i] = testInjector.calc_flowrate_dyer(6894.76*p1,6894.76*p2[i])
+    #     m_dot_spi[i] = testInjector.calc_flowrate_spi(6894.76*p1,6894.76*p2[i])
+    #     m_dot_hem[i] = testInjector.calc_flowrate_hem(6894.76*p1,6894.76*p2[i])
+    # delta_p = [p1 - p for p in p2]
+    # plt.style.use('dark_background')
+    # plt.plot(delta_p, m_dot_dyer, label='Dyer Model', linewidth=2)
+    # plt.plot(delta_p, m_dot_spi, label='single-phase incomp. Model', linewidth=2)
+    # plt.plot(delta_p, m_dot_hem, label='2-phase homo. equillib. Model', linewidth=2)
+    # plt.xlabel('Pressure Difference, ΔP [psi]', color='white')
+    # plt.ylabel('Injector Mass Flow Rate [kg/s]', color='white')
+    # plt.title('Injector Flow vs Pressure Difference', color='white')
+    # plt.grid(color='grey', linestyle='--', linewidth=0.5)
+    # plt.legend()
+    # plt.show()
 
 main()
